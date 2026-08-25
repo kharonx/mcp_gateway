@@ -1,0 +1,81 @@
+import type { EndpointDef } from "../types.js";
+
+const EVENT_LIST_SELECT =
+  "id,subject,organizer,attendees,start,end,location,isOnlineMeeting,onlineMeeting,onlineMeetingProvider,bodyPreview,recurrence,seriesMasterId,webLink,createdDateTime,lastModifiedDateTime";
+
+export const calendarEndpoints: EndpointDef[] = [
+  {
+    name: "list-calendars",
+    description: "List the signed-in user's calendars.",
+    toolset: "calendar",
+    scopes: ["Calendars.Read"],
+    method: "GET",
+    path: "/me/calendars",
+    resourceType: "calendar",
+    paginated: true,
+    defaultSelect: "id,name,owner,canShare,canEdit,isDefaultCalendar",
+  },
+  {
+    name: "get-calendar",
+    description: "Get a single calendar by id.",
+    toolset: "calendar",
+    scopes: ["Calendars.Read"],
+    method: "GET",
+    path: "/me/calendars/{calendarId}",
+    resourceType: "calendar",
+  },
+  {
+    name: "get-calendar-view",
+    description:
+      "PRIMARY meeting-lookup tool: list all calendar events (including recurring occurrences) within a time range. Requires timeRange or from/to. Returns organizer, participants, start/end, location, onlineMeeting join URL, recurrence.",
+    toolset: "calendar",
+    scopes: ["Calendars.Read"],
+    method: "GET",
+    path: "/me/calendarView",
+    resourceType: "calendarEvent",
+    paginated: true,
+    defaultSelect: EVENT_LIST_SELECT,
+    defaultOrderby: "start/dateTime",
+    query: { filter: true, select: true, orderby: true },
+    timeFilterProperty: "start/dateTime",
+    timeParamStyle: "queryParams",
+    timeRequired: true,
+    sourceType: "calendarEvent",
+  },
+  {
+    name: "list-calendar-events",
+    description:
+      "List events of the default calendar (series masters + single events). For time-ranged queries prefer get-calendar-view which expands recurrences.",
+    toolset: "calendar",
+    scopes: ["Calendars.Read"],
+    method: "GET",
+    path: "/me/events",
+    resourceType: "calendarEvent",
+    paginated: true,
+    defaultSelect: EVENT_LIST_SELECT,
+    query: { filter: true, select: true, orderby: true },
+    sourceType: "calendarEvent",
+  },
+  {
+    name: "get-calendar-event",
+    description: "Get a single event with full body/description, attendees, online meeting info and recurrence.",
+    toolset: "calendar",
+    scopes: ["Calendars.Read"],
+    method: "GET",
+    path: "/me/events/{eventId}",
+    resourceType: "calendarEvent",
+    query: { select: true },
+    sourceType: "calendarEvent",
+  },
+  {
+    name: "list-event-attachments",
+    description: "List attachments of a calendar event (metadata).",
+    toolset: "calendar",
+    scopes: ["Calendars.Read"],
+    method: "GET",
+    path: "/me/events/{eventId}/attachments",
+    resourceType: "eventAttachment",
+    paginated: true,
+    defaultSelect: "id,name,contentType,size,isInline,lastModifiedDateTime",
+  },
+];
