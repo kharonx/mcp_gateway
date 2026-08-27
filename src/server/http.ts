@@ -1,4 +1,4 @@
-import { randomUUID, timingSafeEqual } from "node:crypto";
+import crypto, { randomUUID, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import express, { type Request, type Response, type NextFunction } from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -9,6 +9,7 @@ import { GraphClient } from "../graph/client.js";
 import { AuditLogger } from "../audit/audit.js";
 import { buildMcpServer } from "./mcp.js";
 import { ADMIN_HTML } from "./adminUi.js";
+import { renderPortal } from "./portalUi.js";
 import { allEndpoints } from "../tools/endpoints/all.js";
 import { WRITE_TOOLSETS, type Toolset, type ToolContext } from "../tools/types.js";
 import { SettingsStore, isEntraConfigured, type MutableSettings } from "../settings.js";
@@ -36,6 +37,34 @@ function safeEqual(a: string, b: string): boolean {
   return ba.length === bb.length && timingSafeEqual(ba, bb);
 }
 
+function parseCookies(header: string | undefined): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const part of (header ?? "").split(";")) {
+    const i = part.indexOf("=");
+    if (i > 0) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return out;
+}
+
+function decodeJwtPayload(token: string | undefined): Record<string, unknown> {
+  try {
+    const mid = (token ?? "").split(".")[1];
+    return JSON.parse(Buffer.from(mid, "base64url").toString("utf8")) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+interface WebSession {
+  accessToken: string;
+  expiresAt: number;
+  name?: string;
+  upn?: string;
+}
+
+const SESSION_COOKIE = "mcp_portal";
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+
 export async function runHttp(baseCfg: AppConfig): Promise<void> {
   const store = new SettingsStore(path.resolve("data", "settings.json"));
   const audit = new AuditLogger(baseCfg.auditDir);
@@ -58,9 +87,103 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
 
   const oauthProxy = new OAuthProxy(() => cfg, path.resolve("data"));
 
+  // ── Web portal sessions (landing-page Microsoft login) ──────────────
+  const sessions = new Map<string, WebSession>();
+  oauthProxy.webLoginHandler = (tokens, _req, res) => {
+    const sid = crypto.randomBytes(24).toString("base64url");
+    const id = decodeJwtPayload(tokens.id_token);
+    const ac = decodeJwtPayload(tokens.access_token);
+    sessions.set(sid, {
+      accessToken: tokens.access_token,
+      expiresAt: Date.now() + Math.min(tokens.expires_in * 1000, SESSION_TTL_MS),
+      name: (id.name ?? ac.name) as string | undefined,
+      upn: (id.preferred_username ?? ac.preferred_username ?? ac.upn) as string | undefined,
+    });
+    const secure = cfg.baseUrl.startsWith("https") ? "; Secure" : "";
+    res.setHeader(
+      "Set-Cookie",
+      `${SESSION_COOKIE}=${sid}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_TTL_MS / 1000}${secure}`
+    );
+    res.redirect("/");
+  };
+  const getSession = (req: Request): { sid?: string; sess?: WebSession } => {
+    const sid = parseCookies(req.headers.cookie)[SESSION_COOKIE];
+    const sess = sid ? sessions.get(sid) : undefined;
+    if (sid && sess && sess.expiresAt < Date.now()) {
+      sessions.delete(sid);
+      return { sid };
+    }
+    return { sid, sess };
+  };
+  const enabledToolCounts = () => {
+    const enabled = allEndpoints.filter((d) => {
+      if (cfg.readOnly && (d.write || WRITE_TOOLSETS.includes(d.toolset))) return false;
+      if (cfg.enabledToolsets && !cfg.enabledToolsets.includes(d.toolset)) return false;
+      return true;
+    });
+    return { toolCount: enabled.length, writeToolCount: enabled.filter((d) => d.write).length };
+  };
+
   const app = express();
   app.use(express.json({ limit: "4mb" }));
   app.use(oauthProxy.router());
+
+  // ── Landing page ────────────────────────────────────────────────────
+  app.get("/", async (req: Request, res: Response) => {
+    const { sess } = getSession(req);
+    let user: { name?: string; mail?: string; upn?: string; jobTitle?: string } | undefined;
+    let graphOk: boolean | undefined;
+    let graphError: string | undefined;
+    if (sess) {
+      user = { name: sess.name, upn: sess.upn };
+      if (obo) {
+        try {
+          const gt = await obo.getGraphToken(sess.accessToken);
+          const me = await fetch(
+            "https://graph.microsoft.com/v1.0/me?$select=displayName,mail,userPrincipalName,jobTitle",
+            { headers: { Authorization: `Bearer ${gt}` } }
+          );
+          if (me.ok) {
+            const m = (await me.json()) as Record<string, string>;
+            user = { name: m.displayName, mail: m.mail, upn: m.userPrincipalName, jobTitle: m.jobTitle };
+            graphOk = true;
+          } else {
+            graphError = `Graph /me HTTP ${me.status}`;
+          }
+        } catch (err) {
+          graphError = err instanceof Error ? err.message : String(err);
+        }
+      } else {
+        graphError = "A szerver Entra ID konfigurációja hiányos.";
+      }
+    }
+    res.type("html").send(
+      renderPortal({
+        configured: isEntraConfigured(cfg),
+        baseUrl: cfg.baseUrl,
+        ...enabledToolCounts(),
+        user,
+        graphOk,
+        graphError,
+        loginError: typeof req.query.login_error === "string" ? req.query.login_error : undefined,
+      })
+    );
+  });
+
+  app.get("/login", (_req: Request, res: Response) => {
+    if (!isEntraConfigured(cfg)) {
+      res.redirect("/?login_error=" + encodeURIComponent("Az Entra ID beállítás még hiányzik (lásd /admin)."));
+      return;
+    }
+    oauthProxy.startWebLogin(res);
+  });
+
+  app.get("/logout", (req: Request, res: Response) => {
+    const { sid } = getSession(req);
+    if (sid) sessions.delete(sid);
+    res.setHeader("Set-Cookie", `${SESSION_COOKIE}=; Path=/; HttpOnly; Max-Age=0`);
+    res.redirect("/");
+  });
 
   app.get("/healthz", (_req, res) => {
     res.json({ status: "ok", name: "m365-reporting-mcp", version: "1.0.0", configured: isEntraConfigured(cfg) });

@@ -32,18 +32,27 @@ interface RegisteredClient {
 }
 
 interface PendingAuth {
-  clientId: string;
-  redirectUri: string;
+  kind: "mcp" | "web";
+  clientId?: string;
+  redirectUri?: string;
   clientState?: string;
-  codeChallenge: string;
+  codeChallenge?: string;
   createdAt: number;
+}
+
+export interface EntraTokens {
+  access_token: string;
+  refresh_token?: string;
+  id_token?: string;
+  expires_in: number;
+  scope?: string;
 }
 
 interface IssuedCode {
   clientId: string;
   redirectUri: string;
   codeChallenge: string;
-  tokens: { access_token: string; refresh_token?: string; expires_in: number; scope?: string };
+  tokens: EntraTokens;
   createdAt: number;
 }
 
@@ -99,6 +108,25 @@ export class OAuthProxy {
 
   registeredClientCount(): number {
     return this.clients.size;
+  }
+
+  /** Set by the HTTP server: called when a portal ("web") login completes at /auth/callback. */
+  webLoginHandler?: (tokens: EntraTokens, req: Request, res: Response) => void | Promise<void>;
+
+  /** Start an Entra login for the web portal (landing page) using the same redirect URI. */
+  startWebLogin(res: Response): void {
+    this.gc();
+    const cfg = this.getCfg();
+    const pendingId = crypto.randomUUID();
+    this.pending.set(pendingId, { kind: "web", createdAt: Date.now() });
+    const entra = new URL(`https://login.microsoftonline.com/${cfg.tenantId}/oauth2/v2.0/authorize`);
+    entra.searchParams.set("client_id", cfg.clientId);
+    entra.searchParams.set("response_type", "code");
+    entra.searchParams.set("redirect_uri", `${cfg.baseUrl}/auth/callback`);
+    entra.searchParams.set("scope", this.entraScope(cfg));
+    entra.searchParams.set("state", pendingId);
+    entra.searchParams.set("prompt", "select_account");
+    res.redirect(entra.toString());
   }
 
   router(): Router {
@@ -170,6 +198,7 @@ export class OAuthProxy {
       }
       const pendingId = crypto.randomUUID();
       this.pending.set(pendingId, {
+        kind: "mcp",
         clientId: client.client_id,
         redirectUri: q.redirect_uri,
         clientState: q.state,
@@ -196,7 +225,27 @@ export class OAuthProxy {
         return;
       }
       this.pending.delete(q.state);
-      const back = new URL(p.redirectUri);
+
+      if (p.kind === "web") {
+        if (q.error) {
+          res.redirect(`/?login_error=${encodeURIComponent(q.error_description ?? q.error)}`);
+          return;
+        }
+        try {
+          const tokens = await this.entraTokenRequest(cfg, {
+            grant_type: "authorization_code",
+            code: q.code,
+            redirect_uri: `${cfg.baseUrl}/auth/callback`,
+          });
+          if (this.webLoginHandler) await this.webLoginHandler(tokens, req, res);
+          else res.redirect("/");
+        } catch (err) {
+          res.redirect(`/?login_error=${encodeURIComponent(err instanceof Error ? err.message : "login failed")}`);
+        }
+        return;
+      }
+
+      const back = new URL(p.redirectUri!);
       if (q.error) {
         back.searchParams.set("error", q.error);
         if (q.error_description) back.searchParams.set("error_description", q.error_description);
@@ -212,9 +261,9 @@ export class OAuthProxy {
         });
         const ourCode = b64url(crypto.randomBytes(32));
         this.codes.set(ourCode, {
-          clientId: p.clientId,
-          redirectUri: p.redirectUri,
-          codeChallenge: p.codeChallenge,
+          clientId: p.clientId!,
+          redirectUri: p.redirectUri!,
+          codeChallenge: p.codeChallenge!,
           tokens,
           createdAt: Date.now(),
         });
@@ -295,10 +344,7 @@ export class OAuthProxy {
     return r;
   }
 
-  private async entraTokenRequest(
-    cfg: AppConfig,
-    params: Record<string, string>
-  ): Promise<{ access_token: string; refresh_token?: string; expires_in: number; scope?: string }> {
+  private async entraTokenRequest(cfg: AppConfig, params: Record<string, string>): Promise<EntraTokens> {
     const body = new URLSearchParams({
       client_id: cfg.clientId,
       client_secret: cfg.clientSecret,
@@ -316,6 +362,7 @@ export class OAuthProxy {
     return {
       access_token: String(data.access_token),
       refresh_token: data.refresh_token ? String(data.refresh_token) : undefined,
+      id_token: data.id_token ? String(data.id_token) : undefined,
       expires_in: Number(data.expires_in ?? 3600),
       scope: data.scope ? String(data.scope) : undefined,
     };
