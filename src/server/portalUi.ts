@@ -131,6 +131,9 @@ export function renderPortal(s: PortalState): string {
   .avatar { width: 46px; height: 46px; border-radius: 50%; background: #0067b8; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; }
   .name { font-weight: 600; font-size: 1.05rem; }
   code.url { display: inline-block; padding: .3rem .55rem; border-radius: .4rem; background: color-mix(in srgb, currentColor 10%, transparent); user-select: all; }
+  h3 { font-size: .95rem; margin: 1.1rem 0 .4rem; }
+  button.copy { padding: .25rem .7rem; margin-left: .4rem; cursor: pointer; border-radius: .4rem; border: 1px solid color-mix(in srgb, currentColor 35%, transparent); background: transparent; color: inherit; font-size: .8rem; }
+  pre.cmd { padding: .5rem .7rem; border-radius: .4rem; background: color-mix(in srgb, currentColor 10%, transparent); overflow-x: auto; font-size: .85rem; user-select: all; }
   ol li { margin-bottom: .35rem; }
   footer { margin-top: 1.5rem; }
 </style>
@@ -164,18 +167,45 @@ ${identityCard}
 
 <div class="card">
   <h2>AI-kliens csatlakoztatása</h2>
-  <p>MCP szerver URL a ChatGPT / Claude connectorhoz:</p>
-  <p><code class="url">${esc(s.baseUrl)}/mcp</code></p>
+  <p>MCP szerver URL (ezt kell megadni minden kliensben):</p>
+  <p><code class="url" id="mcpurl">${esc(s.baseUrl)}/mcp</code>
+     <button class="copy" onclick="navigator.clipboard.writeText(document.getElementById('mcpurl').textContent).then(()=>{this.textContent='Másolva ✓';setTimeout(()=>this.textContent='Másolás',1500)})">Másolás</button></p>
+  <p class="muted">A csatlakozáskor felugró bejelentkezés a vállalati Microsoft (Entra ID) login —
+  mindenki a <b>saját fiókjával</b> lép be, és csak a saját jogosultságait kapja.</p>
+
+  <h3>🟢 ChatGPT (asztali alkalmazás)</h3>
   <ol>
-    <li>ChatGPT → Settings → <b>Connectors</b> → új MCP connector a fenti URL-lel.</li>
-    <li>A felugró bejelentkezés a vállalati Microsoft (Entra ID) login — mindenki a <b>saját fiókjával</b> lép be.</li>
-    <li>Az AI ezután csak azt éri el, amit az adott felhasználó az Outlookban / Teamsben / SharePointon amúgy is lát.
-        Levelet küldeni kizárólag külön jóváhagyás után tud.</li>
+    <li>Indítsd el a <b>ChatGPT alkalmazást</b>.</li>
+    <li><b>Szerkesztés</b> menü → <b>Beállítások</b>.</li>
+    <li>Bal oldalt keresd meg a <b>Bővítmények</b> (Connectors) menüpontot.</li>
+    <li><b>Hozzáadás</b> → <b>MCP-kiszolgáló hozzáadása</b>.</li>
+    <li>Kapcsolat típusa: <b>Közvetíthető HTTP</b> (Streamable HTTP), URL: a fenti cím. Adj neki nevet, pl. <i>M365 Reporting</i>.</li>
+    <li>Mentés után nyomd meg az <b>MCP-k és hitelesítés</b> gombot → jelentkezz be a vállalati Microsoft-fiókoddal.</li>
+    <li>Siker esetén a bővítmény adatlapján megjelenik az elérhető eszközök (toolok) listája.</li>
   </ol>
+
+  <h3>🟠 Claude (claude.ai vagy Claude Desktop)</h3>
+  <ol>
+    <li>Bal alsó profilmenü → <b>Settings</b> → <b>Connectors</b>.</li>
+    <li><b>Add custom connector</b> → Name: pl. <i>M365 Reporting</i>, Remote MCP server URL: a fenti cím → <b>Add</b>.</li>
+    <li>A connector mellett <b>Connect</b> → vállalati Microsoft-bejelentkezés → engedélyezés.</li>
+    <li>Új beszélgetésben a keresés/eszközök ikonnál kapcsold be a connectort.</li>
+  </ol>
+
+  <h3>🟣 Claude Code (terminál)</h3>
+  <pre class="cmd">claude mcp add --transport http m365-reporting ${esc(s.baseUrl)}/mcp</pre>
+  <ol>
+    <li>Futtasd a fenti parancsot (a <code>--scope user</code> kapcsolóval minden projektedben elérhető lesz).</li>
+    <li>A Claude Code-ban add ki a <code>/mcp</code> parancsot → <b>Authenticate</b> → böngészős Microsoft-bejelentkezés.</li>
+  </ol>
+
+  <p class="muted">Gyors ellenőrzés csatlakozás után: <i>„Listázd a mai naptáramat”</i> — a hívás azonnal
+  megjelenik az <a href="/admin">admin Napló</a> fülén is.</p>
 </div>
 
 <footer class="muted">
   <a href="/admin">Admin felület</a> · <a href="/healthz">Állapot</a> · m365-reporting-mcp v1.0
+  <div style="margin-top:.5rem">By Botha Levente @alphavet 2026</div>
 </footer>
 </body>
 </html>`;

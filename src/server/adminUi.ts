@@ -105,6 +105,8 @@ export const ADMIN_HTML = `<!doctype html>
   <p class="muted">A napló csak metaadatot tartalmaz – levéltörzs, átirat, dokumentumtartalom és token soha nem kerül bele.</p>
 </section>
 
+<footer class="muted" style="margin-top:1.5rem">By Botha Levente @alphavet 2026</footer>
+
 <script>
 let TOOLS = [];
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
