@@ -155,9 +155,9 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
             (result as any).note =
               `${(result as any).note ?? ""} File exceeds MAX_DOWNLOAD_BYTES (${config.maxDownloadBytes}); content was truncated.`.trim();
           }
-        } else if (def.method === "POST") {
+        } else if (def.method !== "GET") {
           const body = def.buildBody ? def.buildBody(args) : {};
-          result = await ctx.graph.request("POST", graphPath, { body });
+          result = await ctx.graph.request(def.method, graphPath, { body });
         } else if (def.paginated) {
           const { query, headers } = buildQueryParams(def, args);
           const maxItems = Math.min(Number(args.maxItems) || config.defaultPageItems, config.maxPageItems);

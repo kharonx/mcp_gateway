@@ -106,7 +106,7 @@ export class GraphClient {
     throw lastError ?? new GraphError(500, "unknown", "Unexpected Graph client state");
   }
 
-  async request(method: "GET" | "POST", path: string, opts: GraphRequestOptions = {}): Promise<unknown> {
+  async request(method: "GET" | "POST" | "PATCH", path: string, opts: GraphRequestOptions = {}): Promise<unknown> {
     const res = await this.rawFetch(method, this.buildUrl(path, opts.query), opts);
     if (res.status === 202 || res.status === 204) {
       return { status: res.status, ok: true };

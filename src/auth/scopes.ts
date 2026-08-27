@@ -9,6 +9,7 @@ export const READ_SCOPES = [
   "Mail.Read",
   "Mail.Read.Shared",
   "Calendars.Read",
+  "Calendars.Read.Shared",
   "Chat.Read",
   "Team.ReadBasic.All",
   "Channel.ReadBasic.All",
@@ -24,12 +25,15 @@ export const READ_SCOPES = [
   "Files.Read.All",
 ];
 
-/** The only WRITE surface of v1: Outlook mail drafting + sending. */
+/** WRITE surface: Outlook mail, calendar events, Teams messages - each send/create gated by confirm=true. */
 export const WRITE_SCOPES = [
   "Mail.ReadWrite",
   "Mail.Send",
   "Mail.ReadWrite.Shared",
   "Mail.Send.Shared",
+  "Calendars.ReadWrite",
+  "ChatMessage.Send",
+  "ChannelMessage.Send",
 ];
 
 export const ALL_SCOPES = [...READ_SCOPES, ...WRITE_SCOPES];

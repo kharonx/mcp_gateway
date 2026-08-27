@@ -5,9 +5,9 @@
 Principle: **read broadly, write narrowly** - the only WRITE surface is Outlook mail
 (draft/send/reply/forward), each send gated by `confirm=true`.
 
-Total tools: **86** (11 WRITE, 75 READ)
+Total tools: **94** (17 WRITE, 77 READ)
 
-Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (6), teams (12), meetings (7), onenote (11), sharepoint (13), onedrive (7), loop (2), search (2), users (3)
+Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (11), sharepoint (13), onedrive (7), loop (2), search (2), users (3)
 
 | MCP tool | Toolset | R/W | HTTP | Graph endpoint (v1.0) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -40,6 +40,11 @@ Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), cale
 | `list-calendar-events` | calendar | READ | GET | `/me/events` | Calendars.Read | enabled | paginated |
 | `get-calendar-event` | calendar | READ | GET | `/me/events/{eventId}` | Calendars.Read | enabled |  |
 | `list-event-attachments` | calendar | READ | GET | `/me/events/{eventId}/attachments` | Calendars.Read | enabled | paginated |
+| `get-people-availability` | calendar | READ | POST | `/me/calendar/getSchedule` | Calendars.Read, Calendars.Read.Shared | enabled |  |
+| `find-meeting-times` | calendar | READ | POST | `/me/findMeetingTimes` | Calendars.Read.Shared | enabled |  |
+| `create-calendar-event` | calendar-write | **WRITE** | POST | `/me/events` | Calendars.ReadWrite | enabled | confirm-required |
+| `update-calendar-event` | calendar-write | **WRITE** | PATCH | `/me/events/{eventId}` | Calendars.ReadWrite | enabled | confirm-required |
+| `respond-to-calendar-event` | calendar-write | **WRITE** | POST | `/me/events/{eventId}/{response}` | Calendars.ReadWrite | enabled | confirm-required |
 | `list-chats` | teams | READ | GET | `/me/chats` | Chat.Read | enabled | paginated |
 | `get-chat` | teams | READ | GET | `/me/chats/{chatId}` | Chat.Read | enabled |  |
 | `list-chat-messages` | teams | READ | GET | `/me/chats/{chatId}/messages` | Chat.Read | enabled | paginated, time-range |
@@ -52,6 +57,9 @@ Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), cale
 | `get-channel-message` | teams | READ | GET | `/teams/{teamId}/channels/{channelId}/messages/{messageId}` | ChannelMessage.Read.All | enabled |  |
 | `list-channel-message-replies` | teams | READ | GET | `/teams/{teamId}/channels/{channelId}/messages/{messageId}/replies` | ChannelMessage.Read.All | enabled | paginated |
 | `list-team-members` | teams | READ | GET | `/teams/{teamId}/members` | TeamMember.Read.All | enabled | paginated |
+| `send-chat-message` | teams-write | **WRITE** | POST | `/chats/{chatId}/messages` | ChatMessage.Send | enabled | confirm-required |
+| `send-channel-message` | teams-write | **WRITE** | POST | `/teams/{teamId}/channels/{channelId}/messages` | ChannelMessage.Send | enabled | confirm-required |
+| `reply-to-channel-message` | teams-write | **WRITE** | POST | `/teams/{teamId}/channels/{channelId}/messages/{messageId}/replies` | ChannelMessage.Send | enabled | confirm-required |
 | `find-online-meeting-by-join-url` | meetings | READ | GET | `/me/onlineMeetings` | OnlineMeetings.Read | enabled | paginated, search |
 | `get-online-meeting` | meetings | READ | GET | `/me/onlineMeetings/{meetingId}` | OnlineMeetings.Read | enabled |  |
 | `list-meeting-transcripts` | meetings | READ | GET | `/me/onlineMeetings/{meetingId}/transcripts` | OnlineMeetingTranscript.Read.All | enabled | paginated |

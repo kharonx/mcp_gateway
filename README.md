@@ -5,8 +5,10 @@ Vállalati MCP szerver, amelyen keresztül ChatGPT, Claude és más MCP-kompatib
 meeting-átiratok, OneNote, SharePoint, OneDrive, Loop, Search, Users).
 
 **Alapelv: read broadly, write narrowly.** Széles READ réteg a bejelentkezett felhasználó
-tényleges M365 jogosultságain belül; az egyetlen WRITE képesség az Outlook levélküldés
-(draft / send / reply / forward), minden tényleges küldés külön `confirm=true` kapuval.
+tényleges M365 jogosultságain belül; a WRITE réteg szűk és explicit: Outlook levél
+(draft / send / reply / forward), naptáresemény (létrehozás / módosítás / meghívó
+megválaszolása) és Teams-üzenet (chat / csatorna / válasz) — minden tényleges
+küldés/létrehozás külön `confirm=true` kapuval.
 
 ## Architektúra
 
@@ -37,13 +39,14 @@ hozzáférési szabályokat.
    Állítsd az `accessTokenAcceptedVersion`-t **2**-re (manifest).
 3. **API permissions** (Microsoft Graph, *Delegated*) — a teljes lista a
    [docs/tool-matrix.md](docs/tool-matrix.md) mellékletben; összefoglalva:
-   - READ: `Mail.Read`, `Mail.Read.Shared`, `Calendars.Read`, `Chat.Read`,
+   - READ: `Mail.Read`, `Mail.Read.Shared`, `Calendars.Read`, `Calendars.Read.Shared`, `Chat.Read`,
      `Team.ReadBasic.All`, `Channel.ReadBasic.All`, `ChannelMessage.Read.All`,
      `TeamMember.Read.All`, `OnlineMeetings.Read`, `OnlineMeetingTranscript.Read.All`,
      `OnlineMeetingRecording.Read.All`, `OnlineMeetingArtifact.Read.All`,
      `Notes.Read`, `Notes.Read.All`, `Sites.Read.All`, `Files.Read`, `Files.Read.All`,
      `People.Read`, `User.Read`, `User.ReadBasic.All`, `User.Read.All`
-   - WRITE (csak mail): `Mail.ReadWrite`, `Mail.Send`, `Mail.ReadWrite.Shared`, `Mail.Send.Shared`
+   - WRITE (mail + naptár + Teams-üzenet): `Mail.ReadWrite`, `Mail.Send`, `Mail.ReadWrite.Shared`,
+     `Mail.Send.Shared`, `Calendars.ReadWrite`, `ChatMessage.Send`, `ChannelMessage.Send`
    - Admin consent szükséges a `.All` scope-okhoz.
 4. HTTP módhoz: **Certificates & secrets** → client secret.
 5. stdio/dev módhoz: **Authentication** → „Allow public client flows" = Yes (device code).

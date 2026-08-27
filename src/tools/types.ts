@@ -10,7 +10,9 @@ export type Toolset =
   | "shared-mail"
   | "shared-mail-write"
   | "calendar"
+  | "calendar-write"
   | "teams"
+  | "teams-write"
   | "meetings"
   | "onenote"
   | "sharepoint"
@@ -19,7 +21,7 @@ export type Toolset =
   | "search"
   | "users";
 
-export const WRITE_TOOLSETS: Toolset[] = ["mail-write", "shared-mail-write"];
+export const WRITE_TOOLSETS: Toolset[] = ["mail-write", "shared-mail-write", "calendar-write", "teams-write"];
 
 export interface QueryCapabilities {
   filter?: boolean;
@@ -42,7 +44,7 @@ export interface EndpointDef {
   write?: boolean;
   /** Delegated Graph scopes used by this tool (documentation + matrix). */
   scopes: string[];
-  method: "GET" | "POST";
+  method: "GET" | "POST" | "PATCH";
   /** Graph v1.0 path template, placeholders in {braces} become required string inputs. */
   path: string;
   pathParamDescriptions?: Record<string, string>;

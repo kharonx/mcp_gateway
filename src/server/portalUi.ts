@@ -30,7 +30,8 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): {
   if (on.has("mail") || on.has("shared-mail")) {
     lines.push("Outlook: levelek, mappák, mellékletek" + (on.has("shared-mail") ? " és megosztott postaládák" : ""));
   }
-  if (on.has("calendar")) lines.push("Naptár: események, résztvevők és online meetingek");
+  if (on.has("calendar"))
+    lines.push("Naptár: események, résztvevők, online meetingek, továbbá mások szabad/foglalt elérhetősége és közös időpontkeresés");
   if (on.has("teams")) lines.push("Teams: chatek, csatornaüzenetek, csapatok és tagok");
   if (on.has("meetings")) lines.push("Meetingek: átiratok, felvételek és jelenléti adatok");
   const drives = [on.has("onedrive") ? "OneDrive" : null, on.has("sharepoint") ? "SharePoint" : null].filter(Boolean);
@@ -41,7 +42,7 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): {
   if (on.has("search")) lines.push("Több forrást átfogó Microsoft 365-keresés");
 
   // Future-proofing: any toolset without a curated line above still shows up.
-  const covered: Toolset[] = ["mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "teams", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search"];
+  const covered: Toolset[] = ["mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search"];
   for (const t of on) {
     if (!covered.includes(t)) {
       const count = enabledDefs.filter((d) => d.toolset === t && !d.write).length;
@@ -55,6 +56,12 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): {
       "Outlook-levél piszkozatként létrehozása, elküldése, megválaszolása vagy továbbítása" +
         (on.has("shared-mail-write") ? " (megosztott postaládából is)" : "")
     );
+  }
+  if (on.has("calendar-write")) {
+    writeLines.push("Naptáresemény létrehozása (Teams-meetingként is), módosítása és meghívó megválaszolása");
+  }
+  if (on.has("teams-write")) {
+    writeLines.push("Teams-üzenet küldése chatbe vagy csatornába, illetve válasz csatornaüzenetre");
   }
   for (const t of on) {
     if (!covered.includes(t)) {
