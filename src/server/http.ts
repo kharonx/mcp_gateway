@@ -9,7 +9,7 @@ import { GraphClient } from "../graph/client.js";
 import { AuditLogger } from "../audit/audit.js";
 import { buildMcpServer } from "./mcp.js";
 import { ADMIN_HTML } from "./adminUi.js";
-import { renderPortal } from "./portalUi.js";
+import { renderPortal, buildCapabilities } from "./portalUi.js";
 import { allEndpoints } from "../tools/endpoints/all.js";
 import { WRITE_TOOLSETS, type Toolset, type ToolContext } from "../tools/types.js";
 import { SettingsStore, isEntraConfigured, type MutableSettings } from "../settings.js";
@@ -115,13 +115,17 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     }
     return { sid, sess };
   };
-  const enabledToolCounts = () => {
+  const profileSummary = () => {
     const enabled = allEndpoints.filter((d) => {
       if (cfg.readOnly && (d.write || WRITE_TOOLSETS.includes(d.toolset))) return false;
       if (cfg.enabledToolsets && !cfg.enabledToolsets.includes(d.toolset)) return false;
       return true;
     });
-    return { toolCount: enabled.length, writeToolCount: enabled.filter((d) => d.write).length };
+    return {
+      toolCount: enabled.length,
+      writeToolCount: enabled.filter((d) => d.write).length,
+      ...buildCapabilities(enabled),
+    };
   };
 
   const app = express();
@@ -161,7 +165,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       renderPortal({
         configured: isEntraConfigured(cfg),
         baseUrl: cfg.baseUrl,
-        ...enabledToolCounts(),
+        ...profileSummary(),
         user,
         graphOk,
         graphError,

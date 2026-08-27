@@ -1,14 +1,68 @@
 /** Landing page: Microsoft login, identity self-check, connector onboarding. */
+import type { EndpointDef, Toolset } from "../tools/types.js";
 
 export interface PortalState {
   configured: boolean;
   baseUrl: string;
   toolCount: number;
   writeToolCount: number;
+  capabilities: string[];
+  writeCapabilities: string[];
   user?: { name?: string; mail?: string; upn?: string; jobTitle?: string };
   graphOk?: boolean;
   graphError?: string;
   loginError?: string;
+}
+
+/**
+ * Derive the human-readable capability list from the ACTUALLY enabled tool
+ * profile, so the landing page stays truthful when toolsets are toggled in
+ * the admin UI or new toolsets are added later. Unknown (future) toolsets
+ * fall back to a generic line instead of being silently hidden.
+ */
+export function buildCapabilities(enabledDefs: EndpointDef[]): {
+  capabilities: string[];
+  writeCapabilities: string[];
+} {
+  const on = new Set<Toolset>(enabledDefs.map((d) => d.toolset));
+  const lines: string[] = [];
+
+  if (on.has("mail") || on.has("shared-mail")) {
+    lines.push("Outlook: levelek, mappák, mellékletek" + (on.has("shared-mail") ? " és megosztott postaládák" : ""));
+  }
+  if (on.has("calendar")) lines.push("Naptár: események, résztvevők és online meetingek");
+  if (on.has("teams")) lines.push("Teams: chatek, csatornaüzenetek, csapatok és tagok");
+  if (on.has("meetings")) lines.push("Meetingek: átiratok, felvételek és jelenléti adatok");
+  const drives = [on.has("onedrive") ? "OneDrive" : null, on.has("sharepoint") ? "SharePoint" : null].filter(Boolean);
+  if (drives.length) lines.push(`${drives.join(" és ")}: fájlok, mappák, listák, keresés és letöltés`);
+  const notes = [on.has("onenote") ? "OneNote" : null, on.has("loop") ? "Loop" : null].filter(Boolean);
+  if (notes.length) lines.push(`${notes.join(" és ")}: oldalak, jegyzetfüzetek és komponensek`);
+  if (on.has("users")) lines.push("Microsoft 365 felhasználók és személyek");
+  if (on.has("search")) lines.push("Több forrást átfogó Microsoft 365-keresés");
+
+  // Future-proofing: any toolset without a curated line above still shows up.
+  const covered: Toolset[] = ["mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "teams", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search"];
+  for (const t of on) {
+    if (!covered.includes(t)) {
+      const count = enabledDefs.filter((d) => d.toolset === t && !d.write).length;
+      if (count) lines.push(`${t}: ${count} további képesség`);
+    }
+  }
+
+  const writeLines: string[] = [];
+  if (on.has("mail-write") || on.has("shared-mail-write")) {
+    writeLines.push(
+      "Outlook-levél piszkozatként létrehozása, elküldése, megválaszolása vagy továbbítása" +
+        (on.has("shared-mail-write") ? " (megosztott postaládából is)" : "")
+    );
+  }
+  for (const t of on) {
+    if (!covered.includes(t)) {
+      const count = enabledDefs.filter((d) => d.toolset === t && d.write).length;
+      if (count) writeLines.push(`${t}: ${count} írási művelet`);
+    }
+  }
+  return { capabilities: lines, writeCapabilities: writeLines };
 }
 
 function esc(s: unknown): string {
@@ -79,6 +133,27 @@ export function renderPortal(s: PortalState): string {
 <div class="muted">Read broadly, write narrowly · ${s.toolCount} tool (${s.writeToolCount} írási — csak Outlook levélküldés)</div>
 
 ${identityCard}
+
+<div class="card">
+  <h2>Mihez fér hozzá az AI ezen a kapcsolaton?</h2>
+  <p>Az mcpgw kapcsolaton keresztül az AI a bejelentkezett Microsoft 365-fiókodhoz fér hozzá,
+  a saját jogosultságaid keretein belül:</p>
+  <ul>
+    ${s.capabilities.map((c) => `<li>${esc(c)}</li>`).join("\n    ")}
+  </ul>
+  ${
+    s.writeCapabilities.length
+      ? `<p><b>Írási lehetőség szándékosan szűk:</b></p>
+  <ul>
+    ${s.writeCapabilities.map((c) => `<li>${esc(c)}</li>`).join("\n    ")}
+  </ul>
+  <p>Küldéshez mindig külön, kifejezett jóváhagyásod kell. Minden egyéb terület csak olvasható —
+  módosítás vagy létrehozás ott nem lehetséges.</p>`
+      : `<p><b>A gateway jelenleg csak olvasási módban fut</b> — írási művelet nincs engedélyezve.</p>`
+  }
+  <p class="muted">Az elérés tényleges tartalma attól is függ, hogy a Microsoft 365-fiókodnak
+  mihez van jogosultsága — az AI soha nem lát többet, mint te magad.</p>
+</div>
 
 <div class="card">
   <h2>AI-kliens csatlakoztatása</h2>
