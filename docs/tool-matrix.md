@@ -5,9 +5,9 @@
 Principle: **read broadly, write narrowly** - the only WRITE surface is Outlook mail
 (draft/send/reply/forward), each send gated by `confirm=true`.
 
-Total tools: **96** (17 WRITE, 79 READ)
+Total tools: **101** (17 WRITE, 84 READ)
 
-Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (13), sharepoint (13), onedrive (7), loop (2), search (2), users (3)
+Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (3)
 
 | MCP tool | Toolset | R/W | HTTP | Graph endpoint (v1.0) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -71,12 +71,17 @@ Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), cale
 | `get-onenote-notebook` | onenote | READ | GET | `/me/onenote/notebooks/{notebookId}` | Notes.Read | enabled |  |
 | `list-onenote-notebook-sections` | onenote | READ | GET | `/me/onenote/notebooks/{notebookId}/sections` | Notes.Read | enabled | paginated |
 | `list-onenote-sections` | onenote | READ | GET | `/me/onenote/sections` | Notes.Read | enabled | paginated |
+| `list-onenote-notebook-section-groups` | onenote | READ | GET | `/me/onenote/notebooks/{notebookId}/sectionGroups` | Notes.Read | enabled | paginated |
+| `list-onenote-section-group-sections` | onenote | READ | GET | `/me/onenote/sectionGroups/{sectionGroupId}/sections` | Notes.Read | enabled | paginated |
 | `list-onenote-section-pages` | onenote | READ | GET | `/me/onenote/sections/{sectionId}/pages` | Notes.Read | enabled | paginated, search |
 | `search-onenote-pages` | onenote | READ | GET | `/me/onenote/pages` | Notes.Read | enabled | paginated, time-range, search |
 | `get-onenote-page` | onenote | READ | GET | `/me/onenote/pages/{pageId}` | Notes.Read | enabled |  |
 | `get-onenote-page-content` | onenote | READ | GET | `/me/onenote/pages/{pageId}/content` | Notes.Read | enabled |  |
 | `list-site-onenote-notebooks` | onenote | READ | GET | `/sites/{siteId}/onenote/notebooks` | Notes.Read.All, Sites.Read.All | enabled | paginated |
 | `list-site-onenote-notebook-sections` | onenote | READ | GET | `/sites/{siteId}/onenote/notebooks/{notebookId}/sections` | Notes.Read.All, Sites.Read.All | enabled | paginated |
+| `list-site-onenote-sections` | onenote | READ | GET | `/sites/{siteId}/onenote/sections` | Notes.Read.All, Sites.Read.All | enabled | paginated |
+| `list-site-onenote-notebook-section-groups` | onenote | READ | GET | `/sites/{siteId}/onenote/notebooks/{notebookId}/sectionGroups` | Notes.Read.All, Sites.Read.All | enabled | paginated |
+| `list-site-onenote-section-group-sections` | onenote | READ | GET | `/sites/{siteId}/onenote/sectionGroups/{sectionGroupId}/sections` | Notes.Read.All, Sites.Read.All | enabled | paginated |
 | `list-site-onenote-section-pages` | onenote | READ | GET | `/sites/{siteId}/onenote/sections/{sectionId}/pages` | Notes.Read.All, Sites.Read.All | enabled | paginated, search |
 | `list-site-onenote-pages` | onenote | READ | GET | `/sites/{siteId}/onenote/pages` | Notes.Read.All, Sites.Read.All | enabled | paginated, search |
 | `get-site-onenote-page-content` | onenote | READ | GET | `/sites/{siteId}/onenote/pages/{pageId}/content` | Notes.Read.All, Sites.Read.All | enabled |  |

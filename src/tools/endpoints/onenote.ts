@@ -1,9 +1,12 @@
 import type { EndpointDef } from "../types.js";
 
 const PAGE_SELECT = "id,title,createdDateTime,lastModifiedDateTime,links,parentSection";
+const SECTION_SELECT = "id,displayName,createdDateTime,lastModifiedDateTime,links";
+/** parentNotebook/parentSectionGroup are navigation properties: they only come back via $expand, not $select. */
+const SECTION_PARENTS = "parentNotebook($select=id,displayName),parentSectionGroup($select=id,displayName)";
 
 export const onenoteEndpoints: EndpointDef[] = [
-  // â”€â”€ Personal OneNote â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Personal OneNote ------------------------------------------------
   {
     name: "list-onenote-notebooks",
     description: "List the signed-in user's OneNote notebooks.",
@@ -51,8 +54,35 @@ export const onenoteEndpoints: EndpointDef[] = [
     paginated: true,
     skipPaging: true,
     defaultOrderby: "lastModifiedDateTime desc",
+    query: { filter: true, orderby: true, expand: SECTION_PARENTS },
+    defaultSelect: SECTION_SELECT,
+  },
+  {
+    name: "list-onenote-notebook-section-groups",
+    description: "List section groups of a OneNote notebook (sections nested in groups are NOT returned by list-onenote-notebook-sections).",
+    toolset: "onenote",
+    scopes: ["Notes.Read"],
+    method: "GET",
+    path: "/me/onenote/notebooks/{notebookId}/sectionGroups",
+    resourceType: "sectionGroup",
+    paginated: true,
+    skipPaging: true,
     query: { filter: true, orderby: true },
-    defaultSelect: "id,displayName,createdDateTime,lastModifiedDateTime,links,parentNotebook",
+    defaultSelect: SECTION_SELECT,
+  },
+  {
+    name: "list-onenote-section-group-sections",
+    description: "List sections inside a OneNote section group (newest-modified first; paginates past 100 automatically).",
+    toolset: "onenote",
+    scopes: ["Notes.Read"],
+    method: "GET",
+    path: "/me/onenote/sectionGroups/{sectionGroupId}/sections",
+    resourceType: "onenoteSection",
+    paginated: true,
+    skipPaging: true,
+    defaultOrderby: "lastModifiedDateTime desc",
+    query: { filter: true, orderby: true },
+    defaultSelect: SECTION_SELECT,
   },
   {
     name: "list-onenote-section-pages",
@@ -102,7 +132,7 @@ export const onenoteEndpoints: EndpointDef[] = [
     resourceType: "onenotePage",
     accept: "text/html",
   },
-  // â”€â”€ SharePoint-hosted OneNote â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- SharePoint-hosted OneNote -------------------------------------
   {
     name: "list-site-onenote-notebooks",
     description: "List OneNote notebooks hosted on a SharePoint site.",
@@ -132,6 +162,51 @@ export const onenoteEndpoints: EndpointDef[] = [
     defaultOrderby: "lastModifiedDateTime desc",
     defaultSelect: "id,displayName,createdDateTime,lastModifiedDateTime,links",
     query: { filter: true, orderby: true },
+  },
+  {
+    name: "list-site-onenote-sections",
+    description:
+      "List ALL sections of a SharePoint site's OneNote notebooks regardless of section-group nesting (newest-modified first; paginates past 100 automatically). Each item carries parentNotebook and parentSectionGroup. Best entry point for large notebooks.",
+    toolset: "onenote",
+    scopes: ["Notes.Read.All", "Sites.Read.All"],
+    method: "GET",
+    path: "/sites/{siteId}/onenote/sections",
+    pathParamDescriptions: { siteId: "SharePoint site id (from search-sites)" },
+    resourceType: "onenoteSection",
+    paginated: true,
+    skipPaging: true,
+    defaultOrderby: "lastModifiedDateTime desc",
+    query: { filter: true, orderby: true, expand: SECTION_PARENTS },
+    defaultSelect: SECTION_SELECT,
+  },
+  {
+    name: "list-site-onenote-notebook-section-groups",
+    description: "List section groups of a SharePoint-hosted OneNote notebook.",
+    toolset: "onenote",
+    scopes: ["Notes.Read.All", "Sites.Read.All"],
+    method: "GET",
+    path: "/sites/{siteId}/onenote/notebooks/{notebookId}/sectionGroups",
+    pathParamDescriptions: { siteId: "SharePoint site id", notebookId: "Notebook id (from list-site-onenote-notebooks)" },
+    resourceType: "sectionGroup",
+    paginated: true,
+    skipPaging: true,
+    query: { filter: true, orderby: true },
+    defaultSelect: SECTION_SELECT,
+  },
+  {
+    name: "list-site-onenote-section-group-sections",
+    description: "List sections inside a section group of a SharePoint-hosted OneNote notebook (newest-modified first).",
+    toolset: "onenote",
+    scopes: ["Notes.Read.All", "Sites.Read.All"],
+    method: "GET",
+    path: "/sites/{siteId}/onenote/sectionGroups/{sectionGroupId}/sections",
+    pathParamDescriptions: { siteId: "SharePoint site id", sectionGroupId: "Section group id (from list-site-onenote-notebook-section-groups)" },
+    resourceType: "onenoteSection",
+    paginated: true,
+    skipPaging: true,
+    defaultOrderby: "lastModifiedDateTime desc",
+    query: { filter: true, orderby: true },
+    defaultSelect: SECTION_SELECT,
   },
   {
     name: "list-site-onenote-section-pages",
