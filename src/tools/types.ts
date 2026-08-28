@@ -69,6 +69,8 @@ export interface EndpointDef {
   timeParamStyle?: "filter" | "queryParams";
   /** Fail if no time range was supplied (calendarView requires one). */
   timeRequired?: boolean;
+  /** Send full-text search as plain `search=` instead of OData `$search` (OneNote pages). */
+  plainSearch?: boolean;
   /** Mail only: when $search is used, fold the time range into KQL instead of $filter. */
   kqlTime?: boolean;
   /** Adds ConsistencyLevel: eventual + $count=true (advanced /users queries). */

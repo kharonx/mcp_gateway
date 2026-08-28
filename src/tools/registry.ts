@@ -89,7 +89,10 @@ function buildQueryParams(def: EndpointDef, args: Record<string, any>): {
       filterParts.push(`${def.timeFilterProperty} ge ${range.from} and ${def.timeFilterProperty} le ${range.to}`);
     }
   }
-  if (search) {
+  if (search && def.plainSearch) {
+    // OneNote pages: full-text search is the non-OData `search=` parameter; `$search` is rejected (Graph 20108).
+    query.search = search;
+  } else if (search) {
     query.$search = def.consistencyLevel ? `"${search.replace(/"/g, '')}"` : `"${search.replace(/"/g, '\\"')}"`;
   }
   if (filterParts.length && !search) query.$filter = filterParts.join(" and ");

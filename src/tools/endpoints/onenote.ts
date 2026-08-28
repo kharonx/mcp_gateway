@@ -2,6 +2,8 @@ import type { EndpointDef } from "../types.js";
 
 const PAGE_SELECT = "id,title,createdDateTime,lastModifiedDateTime,links,parentSection";
 const SECTION_SELECT = "id,displayName,createdDateTime,lastModifiedDateTime,links";
+/** sectionGroup has no `links` property. */
+const SECTION_GROUP_SELECT = "id,displayName,createdDateTime,lastModifiedDateTime";
 /** parentNotebook/parentSectionGroup are navigation properties: they only come back via $expand, not $select. */
 const SECTION_PARENTS = "parentNotebook($select=id,displayName),parentSectionGroup($select=id,displayName)";
 
@@ -68,7 +70,7 @@ export const onenoteEndpoints: EndpointDef[] = [
     paginated: true,
     skipPaging: true,
     query: { filter: true, orderby: true },
-    defaultSelect: SECTION_SELECT,
+    defaultSelect: SECTION_GROUP_SELECT,
   },
   {
     name: "list-onenote-section-group-sections",
@@ -95,6 +97,7 @@ export const onenoteEndpoints: EndpointDef[] = [
     paginated: true,
     defaultSelect: PAGE_SELECT,
     query: { search: true, filter: true, orderby: true },
+    plainSearch: true,
     sourceType: "onenotePage",
   },
   {
@@ -109,6 +112,7 @@ export const onenoteEndpoints: EndpointDef[] = [
     paginated: true,
     defaultSelect: PAGE_SELECT,
     query: { search: true, filter: true, orderby: true },
+    plainSearch: true,
     timeFilterProperty: "lastModifiedDateTime",
     sourceType: "onenotePage",
   },
@@ -191,7 +195,7 @@ export const onenoteEndpoints: EndpointDef[] = [
     paginated: true,
     skipPaging: true,
     query: { filter: true, orderby: true },
-    defaultSelect: SECTION_SELECT,
+    defaultSelect: SECTION_GROUP_SELECT,
   },
   {
     name: "list-site-onenote-section-group-sections",
@@ -220,6 +224,7 @@ export const onenoteEndpoints: EndpointDef[] = [
     paginated: true,
     defaultSelect: PAGE_SELECT,
     query: { search: true, filter: true, orderby: true },
+    plainSearch: true,
     sourceType: "onenotePage",
   },
   {
@@ -234,6 +239,7 @@ export const onenoteEndpoints: EndpointDef[] = [
     paginated: true,
     defaultSelect: PAGE_SELECT,
     query: { search: true, filter: true, orderby: true },
+    plainSearch: true,
     sourceType: "onenotePage",
   },
   {
