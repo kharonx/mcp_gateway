@@ -3,7 +3,7 @@ import type { EndpointDef } from "../types.js";
 const PAGE_SELECT = "id,title,createdDateTime,lastModifiedDateTime,links,parentSection";
 
 export const onenoteEndpoints: EndpointDef[] = [
-  // ── Personal OneNote ────────────────────────────────────────────────
+  // â”€â”€ Personal OneNote â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     name: "list-onenote-notebooks",
     description: "List the signed-in user's OneNote notebooks.",
@@ -13,6 +13,8 @@ export const onenoteEndpoints: EndpointDef[] = [
     path: "/me/onenote/notebooks",
     resourceType: "notebook",
     paginated: true,
+    skipPaging: true,
+    query: { filter: true, orderby: true },
     defaultSelect: "id,displayName,createdDateTime,lastModifiedDateTime,links,isDefault",
   },
   {
@@ -26,24 +28,30 @@ export const onenoteEndpoints: EndpointDef[] = [
   },
   {
     name: "list-onenote-notebook-sections",
-    description: "List sections of a OneNote notebook.",
+    description: "List sections of a OneNote notebook (newest-modified first; paginates past 100 sections automatically).",
     toolset: "onenote",
     scopes: ["Notes.Read"],
     method: "GET",
     path: "/me/onenote/notebooks/{notebookId}/sections",
     resourceType: "onenoteSection",
     paginated: true,
+    skipPaging: true,
+    defaultOrderby: "lastModifiedDateTime desc",
+    query: { filter: true, orderby: true },
     defaultSelect: "id,displayName,createdDateTime,lastModifiedDateTime,links",
   },
   {
     name: "list-onenote-sections",
-    description: "List all OneNote sections across the user's notebooks.",
+    description: "List all OneNote sections across the user's notebooks (newest-modified first; paginates past 100 automatically).",
     toolset: "onenote",
     scopes: ["Notes.Read"],
     method: "GET",
     path: "/me/onenote/sections",
     resourceType: "onenoteSection",
     paginated: true,
+    skipPaging: true,
+    defaultOrderby: "lastModifiedDateTime desc",
+    query: { filter: true, orderby: true },
     defaultSelect: "id,displayName,createdDateTime,lastModifiedDateTime,links,parentNotebook",
   },
   {
@@ -94,7 +102,7 @@ export const onenoteEndpoints: EndpointDef[] = [
     resourceType: "onenotePage",
     accept: "text/html",
   },
-  // ── SharePoint-hosted OneNote ───────────────────────────────────────
+  // â”€â”€ SharePoint-hosted OneNote â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     name: "list-site-onenote-notebooks",
     description: "List OneNote notebooks hosted on a SharePoint site.",
@@ -105,6 +113,8 @@ export const onenoteEndpoints: EndpointDef[] = [
     pathParamDescriptions: { siteId: "SharePoint site id (from search-sites)" },
     resourceType: "notebook",
     paginated: true,
+    skipPaging: true,
+    query: { filter: true, orderby: true },
     defaultSelect: "id,displayName,createdDateTime,lastModifiedDateTime,links",
   },
   {

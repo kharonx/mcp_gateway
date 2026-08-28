@@ -55,6 +55,11 @@ export interface EndpointDef {
   maxTop?: number;
   /** Endpoints that reject $top entirely. */
   noTop?: boolean;
+  /**
+   * Collections that never return @odata.nextLink (OneNote notebooks/sections/
+   * sectionGroups): page with $skip until a short page comes back.
+   */
+  skipPaging?: boolean;
   defaultSelect?: string;
   defaultOrderby?: string;
   query?: QueryCapabilities;

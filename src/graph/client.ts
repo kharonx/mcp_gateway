@@ -134,21 +134,34 @@ export class GraphClient {
     };
   }
 
-  /** GET with @odata.nextLink pagination up to maxItems. */
+  /**
+   * GET with @odata.nextLink pagination up to maxItems.
+   * With skipPaging, collections that never emit nextLink (OneNote
+   * notebooks/sections) are walked with $skip until a short page arrives.
+   */
   async getPaged(
     path: string,
     query: Record<string, string | undefined>,
     maxItems: number,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
+    opts: { skipPaging?: boolean } = {}
   ): Promise<PagedResult> {
     const items: unknown[] = [];
     let url: string | undefined = this.buildUrl(path, query);
     let nextLink: string | undefined;
+    const top = query.$top ? Number(query.$top) : undefined;
+    let skip = query.$skip ? Number(query.$skip) : 0;
     while (url && items.length < maxItems) {
       const res = await this.rawFetch("GET", url, { headers });
       const data = (await res.json()) as { value?: unknown[]; "@odata.nextLink"?: string };
-      items.push(...(data.value ?? []));
+      const page = data.value ?? [];
+      items.push(...page);
       nextLink = data["@odata.nextLink"];
+      if (!nextLink && opts.skipPaging && top && page.length >= top) {
+        // Full page without nextLink -> there may be more; continue via $skip.
+        skip += page.length;
+        nextLink = this.buildUrl(path, { ...query, $skip: String(skip) });
+      }
       url = nextLink;
     }
     const truncated = items.length > maxItems || !!nextLink;

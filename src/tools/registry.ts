@@ -162,7 +162,13 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
           const { query, headers } = buildQueryParams(def, args);
           const maxItems = Math.min(Number(args.maxItems) || config.defaultPageItems, config.maxPageItems);
           const top = def.noTop ? undefined : String(Math.min(maxItems, def.maxTop ?? 100));
-          const paged = await ctx.graph.getPaged(graphPath, { ...query, ...(top ? { $top: top } : {}) }, maxItems, headers);
+          const paged = await ctx.graph.getPaged(
+            graphPath,
+            { ...query, ...(top ? { $top: top } : {}) },
+            maxItems,
+            headers,
+            { skipPaging: def.skipPaging }
+          );
           result = {
             count: paged.count,
             truncated: paged.truncated,
