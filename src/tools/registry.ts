@@ -19,7 +19,11 @@ function buildInputSchema(def: EndpointDef, defaultPageItems: number, maxPageIte
       .min(1)
       .max(maxPageItems)
       .optional()
-      .describe(`Maximum items to return across pages (default ${defaultPageItems}, max ${maxPageItems}). Pagination via @odata.nextLink is handled automatically.`);
+      .describe(`Maximum items to return across pages (default ${defaultPageItems}, max ${maxPageItems}). Pagination via @odata.nextLink is handled automatically; when the result is truncated, pass its nextCursor as cursor to continue.`);
+    shape.cursor = z
+      .string()
+      .optional()
+      .describe("Continuation token (nextCursor of a previous truncated response). Continues that listing; other query inputs are ignored.");
   }
   if (def.query?.filter) {
     shape.filter = z.string().optional().describe("OData $filter expression, e.g. \"importance eq 'high'\" or \"hasAttachments eq true\"");
@@ -165,17 +169,26 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
           const { query, headers } = buildQueryParams(def, args);
           const maxItems = Math.min(Number(args.maxItems) || config.defaultPageItems, config.maxPageItems);
           const top = def.noTop ? undefined : String(Math.min(maxItems, def.maxTop ?? 100));
+          const cursor = typeof args.cursor === "string" && args.cursor ? args.cursor : undefined;
+          if (cursor && !cursor.startsWith("https://graph.microsoft.com/")) {
+            throw new Error("cursor must be a nextCursor value returned by this server.");
+          }
           const paged = await ctx.graph.getPaged(
             graphPath,
             { ...query, ...(top ? { $top: top } : {}) },
             maxItems,
             headers,
-            { skipPaging: def.skipPaging }
+            { skipPaging: def.skipPaging, cursor }
           );
           result = {
             count: paged.count,
             truncated: paged.truncated,
-            ...(paged.truncated ? { note: "More items exist. Narrow the query or increase maxItems." } : {}),
+            ...(paged.truncated
+              ? {
+                  note: "More items exist. Call again with cursor=nextCursor to continue (or narrow the query).",
+                  nextCursor: paged.nextLink,
+                }
+              : {}),
             items: withSourceList(paged.items, def.sourceType),
           };
         } else {

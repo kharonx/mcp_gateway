@@ -1,7 +1,8 @@
 import { z } from "zod";
 import type { EndpointDef } from "../types.js";
 
-const USER_SELECT = "id,displayName,givenName,surname,mail,userPrincipalName,jobTitle,department,officeLocation,mobilePhone,businessPhones";
+const USER_SELECT =
+  "id,displayName,givenName,surname,mail,userPrincipalName,jobTitle,department,officeLocation,mobilePhone,businessPhones,accountEnabled,userType";
 
 /**
  * Identity resolution (spec section 15): display name -> Entra user -> email,
@@ -10,13 +11,15 @@ const USER_SELECT = "id,displayName,givenName,surname,mail,userPrincipalName,job
 export const usersEndpoints: EndpointDef[] = [
   {
     name: "list-users",
-    description: "List users of the organization (paged). Supports $filter and advanced $search.",
+    description:
+      "List ALL users of the organization including disabled accounts (accountEnabled=false) and guests. Paged: for directories larger than maxItems follow nextCursor. Supports $filter (e.g. \"accountEnabled eq false\") and advanced $search.",
     toolset: "users",
     scopes: ["User.Read.All"],
     method: "GET",
     path: "/users",
     resourceType: "user",
     paginated: true,
+    maxTop: 999,
     defaultSelect: USER_SELECT,
     query: { filter: true, orderby: true, select: true },
     consistencyLevel: true,

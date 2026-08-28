@@ -144,32 +144,35 @@ export class GraphClient {
     query: Record<string, string | undefined>,
     maxItems: number,
     headers?: Record<string, string>,
-    opts: { skipPaging?: boolean } = {}
+    opts: { skipPaging?: boolean; cursor?: string } = {}
   ): Promise<PagedResult> {
     const items: unknown[] = [];
-    let url: string | undefined = this.buildUrl(path, query);
+    // A cursor is a previously returned nextLink: it already carries every query option.
+    let url: string | undefined = opts.cursor ?? this.buildUrl(path, query);
     let nextLink: string | undefined;
-    const top = query.$top ? Number(query.$top) : undefined;
-    let skip = query.$skip ? Number(query.$skip) : 0;
     while (url && items.length < maxItems) {
+      const current: URL = new URL(url);
       const res = await this.rawFetch("GET", url, { headers });
       const data = (await res.json()) as { value?: unknown[]; "@odata.nextLink"?: string };
       const page = data.value ?? [];
       items.push(...page);
       nextLink = data["@odata.nextLink"];
+      const top = Number(current.searchParams.get("$top") ?? 0);
       if (!nextLink && opts.skipPaging && top && page.length >= top) {
         // Full page without nextLink -> there may be more; continue via $skip.
-        skip += page.length;
-        nextLink = this.buildUrl(path, { ...query, $skip: String(skip) });
+        const skip = Number(current.searchParams.get("$skip") ?? 0) + page.length;
+        current.searchParams.set("$skip", String(skip));
+        nextLink = current.toString();
       }
       url = nextLink;
     }
-    const truncated = items.length > maxItems || !!nextLink;
+    // Whole pages are kept even if the last one overshoots maxItems: dropping
+    // items would make the returned cursor skip them.
     return {
-      items: items.slice(0, maxItems),
-      count: Math.min(items.length, maxItems),
-      truncated,
-      nextLink: truncated ? nextLink : undefined,
+      items,
+      count: items.length,
+      truncated: !!nextLink,
+      nextLink,
     };
   }
 }
