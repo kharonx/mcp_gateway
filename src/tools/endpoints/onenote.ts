@@ -103,7 +103,7 @@ export const onenoteEndpoints: EndpointDef[] = [
   {
     name: "search-onenote-pages",
     description:
-      "List/search OneNote pages across all notebooks (full-text $search over title and content; time filter on lastModifiedDateTime).",
+      "List OneNote pages across all personal notebooks, newest first (time filter on lastModifiedDateTime; filter e.g. \"contains(title,'x')\"). Full-text `search` is not supported by Graph v1.0 (error 20108). Accounts with many sections get Graph error 20266 here - then go notebook -> sections -> list-onenote-section-pages instead.",
     toolset: "onenote",
     scopes: ["Notes.Read"],
     method: "GET",
