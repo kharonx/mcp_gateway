@@ -18,6 +18,17 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-08-28",
+    commit: "289da22+",
+    title: "Entra felhasználó-letiltás időpontja az audit naplóból",
+    items: [
+      "Új tool: get-user-account-status-history - egy felhasználó (Object ID vagy UPN) letiltásának/visszaengedélyezésének pontos UTC időpontja, a kezdeményező felhasználó vagy alkalmazás, az eredmény és az auditbejegyzés-azonosító az Entra directory audit naplóból. Csak az accountEnabled-változásokat adja vissza (Disable/Enable account, illetve Update user AccountEnabled true->false), a többi user update-et nem.",
+      "Új tool: list-directory-audits - az Entra címtár audit napló szabadon szűrhető lekérdezése (kategória, művelet, célfelhasználó, dátumtartomány), lapozással.",
+      "Megőrzési időn (30 nap, P1/P2) kívüli eseménynél egyértelmű \"nem érhető el a naplóban\" válasz, becsült dátum nélkül.",
+      "Jogosultság: kizárólag olvasás - AuditLog.Read.All + Directory.Read.All (admin consent), olvasó szerepkörrel (Reports/Security/Global Reader).",
+    ],
+  },
+  {
+    date: "2026-08-28",
     commit: "f6d6c30",
     title: "Nagy címtárak és nagy OneNote-jegyzetfüzetek",
     items: [

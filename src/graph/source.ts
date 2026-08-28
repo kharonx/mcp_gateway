@@ -125,7 +125,25 @@ function userSource(u: AnyObj): SourceInfo {
   };
 }
 
+function directoryAuditSource(a: AnyObj): SourceInfo {
+  const target = Array.isArray(a.targetResources) ? a.targetResources[0] : undefined;
+  return {
+    sourceType: "directoryAudit",
+    sourceId: a.id,
+    title: a.activityDisplayName,
+    author: a.initiatedBy?.user?.userPrincipalName ?? a.initiatedBy?.app?.displayName,
+    activityDateTime: a.activityDateTime,
+    category: a.category,
+    result: a.result,
+    target: target?.userPrincipalName ?? target?.displayName,
+    targetId: target?.id,
+    correlationId: a.correlationId,
+    loggedByService: a.loggedByService,
+  };
+}
+
 const MAPPERS: Record<string, (o: AnyObj) => SourceInfo> = {
+  directoryAudit: directoryAuditSource,
   mailMessage: mailSource,
   calendarEvent: eventSource,
   chatMessage: chatMessageSource,

@@ -5,9 +5,9 @@
 Principle: **read broadly, write narrowly** - the only WRITE surface is Outlook mail
 (draft/send/reply/forward), each send gated by `confirm=true`.
 
-Total tools: **101** (17 WRITE, 84 READ)
+Total tools: **103** (17 WRITE, 86 READ)
 
-Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (3)
+Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (5)
 
 | MCP tool | Toolset | R/W | HTTP | Graph endpoint (v1.0) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -111,6 +111,8 @@ Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), cale
 | `search-people` | search | READ | GET | `/me/people` | People.Read | enabled | paginated, search |
 | `list-users` | users | READ | GET | `/users` | User.Read.All | enabled | paginated |
 | `get-user` | users | READ | GET | `/users/{userIdOrUpn}` | User.Read.All | enabled |  |
+| `get-user-account-status-history` | users | READ | GET | `/auditLogs/directoryAudits` | AuditLog.Read.All, Directory.Read.All | enabled | paginated, time-range, search |
+| `list-directory-audits` | users | READ | GET | `/auditLogs/directoryAudits` | AuditLog.Read.All, Directory.Read.All | enabled | paginated, time-range |
 | `search-users` | users | READ | GET | `/users` | User.Read.All | enabled | paginated, search |
 
 ## Deliberately NOT exposed (safety layer, spec sections 19-20)

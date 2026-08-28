@@ -23,6 +23,8 @@ export const READ_SCOPES = [
   "Notes.Read.All",
   "Sites.Read.All",
   "Files.Read.All",
+  "AuditLog.Read.All",
+  "Directory.Read.All",
 ];
 
 /** WRITE surface: Outlook mail, calendar events, Teams messages - each send/create gated by confirm=true. */

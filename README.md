@@ -47,6 +47,12 @@ hozzáférési szabályokat.
      `People.Read`, `User.Read`, `User.ReadBasic.All`, `User.Read.All`
    - WRITE (mail + naptár + Teams-üzenet): `Mail.ReadWrite`, `Mail.Send`, `Mail.ReadWrite.Shared`,
      `Mail.Send.Shared`, `Calendars.ReadWrite`, `ChatMessage.Send`, `ChannelMessage.Send`
+   - AUDIT (csak olvasás, Entra directory audit napló — `get-user-account-status-history`,
+     `list-directory-audits`): `AuditLog.Read.All`, `Directory.Read.All`. Admin consent kell,
+     és a hívó felhasználónak olvasó címtárszerepkör: *Reports Reader*, *Security Reader* vagy
+     *Global Reader* (írási/címtár-adminisztrációs jog nem szükséges és nem is kerül felhasználásra).
+     Az audit napló megőrzése 30 nap (Entra ID P1/P2; Free: 7 nap) — ennél régebbi letiltást a tool
+     kifejezetten „nem érhető el a naplóban” eredménnyel jelez, dátumot nem becsül.
    - Admin consent szükséges a `.All` scope-okhoz.
 4. HTTP módhoz: **Certificates & secrets** → client secret.
 5. stdio/dev módhoz: **Authentication** → „Allow public client flows" = Yes (device code).

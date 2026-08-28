@@ -79,6 +79,8 @@ function buildQueryParams(def: EndpointDef, args: Record<string, any>): {
     throw new Error("A time range is required: pass timeRange (e.g. last_7_days) or explicit from/to.");
   }
   const filterParts: string[] = [];
+  // A $filter produced by buildQuery is combined with (not replaced by) user filter and time range.
+  if (query.$filter) filterParts.push(`(${query.$filter})`);
   if (args.filter) filterParts.push(String(args.filter));
 
   let search: string | undefined = args.search ? String(args.search) : undefined;
