@@ -5,9 +5,9 @@
 Principle: **read broadly, write narrowly** - the only WRITE surface is Outlook mail
 (draft/send/reply/forward), each send gated by `confirm=true`.
 
-Total tools: **94** (17 WRITE, 77 READ)
+Total tools: **96** (17 WRITE, 79 READ)
 
-Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (11), sharepoint (13), onedrive (7), loop (2), search (2), users (3)
+Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (13), sharepoint (13), onedrive (7), loop (2), search (2), users (3)
 
 | MCP tool | Toolset | R/W | HTTP | Graph endpoint (v1.0) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -76,6 +76,8 @@ Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), cale
 | `get-onenote-page` | onenote | READ | GET | `/me/onenote/pages/{pageId}` | Notes.Read | enabled |  |
 | `get-onenote-page-content` | onenote | READ | GET | `/me/onenote/pages/{pageId}/content` | Notes.Read | enabled |  |
 | `list-site-onenote-notebooks` | onenote | READ | GET | `/sites/{siteId}/onenote/notebooks` | Notes.Read.All, Sites.Read.All | enabled | paginated |
+| `list-site-onenote-notebook-sections` | onenote | READ | GET | `/sites/{siteId}/onenote/notebooks/{notebookId}/sections` | Notes.Read.All, Sites.Read.All | enabled | paginated |
+| `list-site-onenote-section-pages` | onenote | READ | GET | `/sites/{siteId}/onenote/sections/{sectionId}/pages` | Notes.Read.All, Sites.Read.All | enabled | paginated, search |
 | `list-site-onenote-pages` | onenote | READ | GET | `/sites/{siteId}/onenote/pages` | Notes.Read.All, Sites.Read.All | enabled | paginated, search |
 | `get-site-onenote-page-content` | onenote | READ | GET | `/sites/{siteId}/onenote/pages/{pageId}/content` | Notes.Read.All, Sites.Read.All | enabled |  |
 | `search-sites` | sharepoint | READ | GET | `/sites` | Sites.Read.All | enabled | paginated, search |
