@@ -9,7 +9,8 @@ import { GraphClient } from "../graph/client.js";
 import { AuditLogger } from "../audit/audit.js";
 import { buildMcpServer } from "./mcp.js";
 import { ADMIN_HTML } from "./adminUi.js";
-import { renderPortal, buildCapabilities } from "./portalUi.js";
+import { renderPortal, buildCapabilities, renderNav, PORTAL_STYLE } from "./portalUi.js";
+import { renderChangelogPage } from "./changelog.js";
 import { allEndpoints } from "../tools/endpoints/all.js";
 import { WRITE_TOOLSETS, type Toolset, type ToolContext } from "../tools/types.js";
 import { SettingsStore, isEntraConfigured, type MutableSettings } from "../settings.js";
@@ -189,6 +190,10 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     if (sid) sessions.delete(sid);
     res.setHeader("Set-Cookie", `${SESSION_COOKIE}=; Path=/; HttpOnly; Max-Age=0`);
     res.redirect("/");
+  });
+
+  app.get("/ujdonsagok", (_req, res) => {
+    res.type("html").send(renderChangelogPage(renderNav("/ujdonsagok"), PORTAL_STYLE));
   });
 
   app.get("/healthz", (_req, res) => {

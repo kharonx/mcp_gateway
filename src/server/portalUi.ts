@@ -1,5 +1,6 @@
 /** Landing page: Microsoft login, identity self-check, connector onboarding. */
 import type { EndpointDef, Toolset } from "../tools/types.js";
+import { CHANGELOG } from "./changelog.js";
 
 export interface PortalState {
   configured: boolean;
@@ -109,13 +110,52 @@ export function renderPortal(s: PortalState): string {
     }
   </div>`;
 
+  const latest = CHANGELOG[0];
+  const whatsNewCard = latest
+    ? `
+<div class="card">
+  <h2>🆕 Újdonságok <span class="muted" style="font-weight:400">· ${esc(latest.date)}</span></h2>
+  <p><b>${esc(latest.title)}</b></p>
+  <ul>
+    ${latest.items.slice(0, 3).map((i) => `<li>${esc(i)}</li>`).join("\n    ")}
+  </ul>
+  <p><a href="/ujdonsagok">Összes újdonság →</a></p>
+</div>`
+    : "";
+
   return `<!doctype html>
 <html lang="hu">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>M365 Reporting MCP Gateway</title>
-<style>
+${PORTAL_STYLE}
+</head>
+<body>
+${renderNav("/")}
+<h1>Microsoft 365 Reporting MCP Gateway</h1>
+<div class="muted">Read broadly, write narrowly · ${s.toolCount} tool (${s.writeToolCount} írási — csak Outlook levélküldés)</div>
+
+${identityCard}
+
+${whatsNewCard}
+${renderPortalBody(s)}`;
+}
+
+/** Top navigation shared by every portal page. */
+export function renderNav(active: string): string {
+  const items: [string, string][] = [
+    ["/", "Kezdőoldal"],
+    ["/ujdonsagok", "Újdonságok"],
+    ["/admin", "Admin"],
+  ];
+  return `<nav class="topnav">${items
+    .map(([href, label]) => `<a href="${href}"${href === active ? ' class="active"' : ""}>${label}</a>`)
+    .join("")}</nav>`;
+}
+
+/** Stylesheet shared by every portal page. */
+export const PORTAL_STYLE = `<style>
   :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
   body { margin: 0; padding: 2rem 1.25rem; max-width: 760px; margin-inline: auto; }
   h1 { font-size: 1.5rem; margin-bottom: .2rem; }
@@ -136,14 +176,14 @@ export function renderPortal(s: PortalState): string {
   pre.cmd { padding: .5rem .7rem; border-radius: .4rem; background: color-mix(in srgb, currentColor 10%, transparent); overflow-x: auto; font-size: .85rem; user-select: all; }
   ol li { margin-bottom: .35rem; }
   footer { margin-top: 1.5rem; }
-</style>
-</head>
-<body>
-<h1>Microsoft 365 Reporting MCP Gateway</h1>
-<div class="muted">Read broadly, write narrowly · ${s.toolCount} tool (${s.writeToolCount} írási — csak Outlook levélküldés)</div>
+  nav.topnav { display: flex; gap: 1.2rem; margin-bottom: 1.2rem; font-size: .92rem; }
+  nav.topnav a { text-decoration: none; color: inherit; opacity: .75; padding-bottom: .15rem; }
+  nav.topnav a.active { opacity: 1; font-weight: 600; border-bottom: 2px solid #0067b8; }
+</style>`;
 
-${identityCard}
-
+/** Landing page body below the identity card (capabilities + client guides). */
+function renderPortalBody(s: PortalState): string {
+  return `
 <div class="card">
   <h2>Mihez fér hozzá az AI ezen a kapcsolaton?</h2>
   <p>Az mcpgw kapcsolaton keresztül az AI a bejelentkezett Microsoft 365-fiókodhoz fér hozzá,
@@ -204,7 +244,7 @@ ${identityCard}
 </div>
 
 <footer class="muted">
-  <a href="/admin">Admin felület</a> · <a href="/healthz">Állapot</a> · m365-reporting-mcp v1.0
+  <a href="/ujdonsagok">Újdonságok</a> · <a href="/admin">Admin felület</a> · <a href="/healthz">Állapot</a> · m365-reporting-mcp v1.0
   <div style="margin-top:.5rem">By Botha Levente @alphavet 2026</div>
 </footer>
 </body>
