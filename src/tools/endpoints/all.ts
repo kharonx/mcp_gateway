@@ -13,8 +13,9 @@ import { onedriveEndpoints } from "./onedrive.js";
 import { loopEndpoints } from "./loop.js";
 import { searchEndpoints } from "./search.js";
 import { usersEndpoints } from "./users.js";
+import { salesforceEndpoints } from "./salesforce.js";
 
-/** The complete Reporting MCP v1 tool matrix. */
+/** The complete Reporting MCP v1 tool matrix (Salesforce is optional - see registry.isToolEnabled). */
 export const allEndpoints: EndpointDef[] = [
   ...mailEndpoints,
   ...mailWriteEndpoints,
@@ -30,6 +31,7 @@ export const allEndpoints: EndpointDef[] = [
   ...loopEndpoints,
   ...searchEndpoints,
   ...usersEndpoints,
+  ...salesforceEndpoints,
 ];
 
 const names = new Set<string>();

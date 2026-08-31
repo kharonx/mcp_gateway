@@ -2,9 +2,12 @@ import type { ZodRawShape } from "zod";
 import type { GraphClient } from "../graph/client.js";
 import type { AuditLogger, AuditEntry } from "../audit/audit.js";
 import type { AppConfig } from "../config.js";
+import type { SalesforceClient } from "../salesforce/client.js";
+import type { SfConnectionInfo } from "../salesforce/auth.js";
 
 /** Logical toolsets of the Reporting profile (spec section 24). */
 export type Toolset =
+  | "salesforce"
   | "mail"
   | "mail-write"
   | "shared-mail"
@@ -42,6 +45,10 @@ export interface EndpointDef {
   description: string;
   toolset: Toolset;
   write?: boolean;
+  /** Data source. Default "graph" (Microsoft Graph); "salesforce" tools run through the caller's own Salesforce connection. */
+  provider?: "graph" | "salesforce";
+  /** Custom implementation (non-Graph providers). Receives validated inputs and the tool context. */
+  handler?: (args: Record<string, any>, ctx: ToolContext) => Promise<unknown>;
   /** Delegated Graph scopes used by this tool (documentation + matrix). */
   scopes: string[];
   method: "GET" | "POST" | "PATCH";
@@ -92,12 +99,23 @@ export interface EndpointDef {
   transform?: (data: any, args: Record<string, any>) => unknown | Promise<unknown>;
 }
 
+/** Per-request access to the calling user's optional Salesforce connection. */
+export interface SalesforceAccess {
+  /** Landing page URL where the user links their Salesforce login. */
+  connectUrl: string;
+  /** Client bound to the caller's connection, or null when this user has not connected Salesforce yet. */
+  client(): SalesforceClient | null;
+  info(): SfConnectionInfo | null;
+}
+
 export interface ToolContext {
   graph: GraphClient;
   audit: AuditLogger;
   user: string;
   session: string;
   config: AppConfig;
+  /** Present only in HTTP mode with a configured Salesforce Connected App. */
+  salesforce?: SalesforceAccess;
 }
 
 export function pathParams(template: string): string[] {

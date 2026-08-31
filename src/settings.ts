@@ -17,6 +17,12 @@ export interface MutableSettings {
   defaultPageItems?: number;
   maxPageItems?: number;
   maxDownloadBytes?: number;
+  /** Optional Salesforce Connected App (Consumer Key / Secret). */
+  salesforceClientId?: string;
+  salesforceClientSecret?: string;
+  salesforceLoginUrl?: string;
+  salesforceScopes?: string;
+  salesforceApiVersion?: string;
 }
 
 export class SettingsStore {
@@ -42,7 +48,7 @@ export class SettingsStore {
     const next: MutableSettings = { ...this.settings };
     for (const [k, v] of Object.entries(patch) as [keyof MutableSettings, unknown][]) {
       if (v === undefined) continue;
-      if (k === "clientSecret" && v === "") continue; // masked in UI - keep stored value
+      if ((k === "clientSecret" || k === "salesforceClientSecret") && v === "") continue; // masked in UI - keep stored value
       (next as Record<string, unknown>)[k] = v;
     }
     this.settings = next;
@@ -63,10 +69,22 @@ export class SettingsStore {
       defaultPageItems: s.defaultPageItems ?? base.defaultPageItems,
       maxPageItems: s.maxPageItems ?? base.maxPageItems,
       maxDownloadBytes: s.maxDownloadBytes ?? base.maxDownloadBytes,
+      salesforce: {
+        clientId: s.salesforceClientId ?? base.salesforce.clientId,
+        clientSecret: s.salesforceClientSecret ?? base.salesforce.clientSecret,
+        loginUrl: (s.salesforceLoginUrl || base.salesforce.loginUrl).replace(/\/+$/, ""),
+        scopes: s.salesforceScopes || base.salesforce.scopes,
+        apiVersion: s.salesforceApiVersion || base.salesforce.apiVersion,
+      },
     };
   }
 }
 
 export function isEntraConfigured(cfg: AppConfig): boolean {
   return !!(cfg.tenantId && cfg.clientId && cfg.clientSecret);
+}
+
+/** Salesforce is optional: the toolset only exists when a Connected App is configured. */
+export function isSalesforceConfigured(cfg: AppConfig): boolean {
+  return !!(cfg.salesforce.clientId && cfg.salesforce.clientSecret);
 }

@@ -17,6 +17,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-08-31",
+    commit: "a6f529e+",
+    title: "Salesforce-összekötés (opcionális)",
+    items: [
+      "Új, opcionális Salesforce toolset a Microsoft 365 mellett: fiókok, kapcsolatok, lehetőségek, ügyek és tetszőleges (egyedi) objektumok lekérdezése, SOQL/SOSL, objektumleírás, egy fiók 360°-os áttekintése (kapcsolatok, pipeline, ügyek, aktivitások), legutóbb megnyitott rekordok, mentett riportok listázása és futtatása.",
+      "Csak olvasás: rekord-létrehozás, -módosítás vagy -törlés nincs; a gateway a Salesforce-ban is kizárólag a bejelentkezett felhasználó saját jogosultságaival dolgozik.",
+      "Összekötés a kezdőoldalon: Microsoft-bejelentkezés után \"Salesforce összekötése\" — mindenki a saját Salesforce-fiókjával lép be a Salesforce oldalán (OAuth 2.0 + PKCE), a jelszót a gateway nem látja; a kapcsolat bármikor bontható.",
+      "Beállítás az admin felületen (Salesforce Connected App Consumer Key/Secret, login URL); amíg nincs kitöltve, a Salesforce toolok nem is jelennek meg.",
+      "Nagy találati listák lapozása (nextCursor) a Salesforce-lekérdezéseknél is; minden rekord _source blokkot kap (objektum, id, Lightning-link).",
+    ],
+  },
+  {
     date: "2026-08-28",
     commit: "289da22+",
     title: "Entra felhasználó-letiltás időpontja az audit naplóból",

@@ -13,6 +13,15 @@ export interface PortalState {
   graphOk?: boolean;
   graphError?: string;
   loginError?: string;
+  /** Present only when the optional Salesforce Connected App is configured. */
+  salesforce?: {
+    connected: boolean;
+    info?: { instanceUrl: string; username?: string; name?: string; email?: string; connectedAt: string };
+    loginUrl: string;
+    error?: string;
+    justConnected?: boolean;
+    justDisconnected?: boolean;
+  };
 }
 
 /**
@@ -41,9 +50,11 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): {
   if (notes.length) lines.push(`${notes.join(" és ")}: oldalak, jegyzetfüzetek és komponensek`);
   if (on.has("users")) lines.push("Microsoft 365 felhasználók és személyek");
   if (on.has("search")) lines.push("Több forrást átfogó Microsoft 365-keresés");
+  if (on.has("salesforce"))
+    lines.push("Salesforce (opcionális, külön összekötéssel): fiókok, kapcsolatok, lehetőségek, ügyek, SOQL/SOSL-lekérdezés, riportok — csak olvasás");
 
   // Future-proofing: any toolset without a curated line above still shows up.
-  const covered: Toolset[] = ["mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search"];
+  const covered: Toolset[] = ["mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce"];
   for (const t of on) {
     if (!covered.includes(t)) {
       const count = enabledDefs.filter((d) => d.toolset === t && !d.write).length;
@@ -110,6 +121,31 @@ export function renderPortal(s: PortalState): string {
     }
   </div>`;
 
+  const sf = s.salesforce;
+  const salesforceCard = sf
+    ? `
+<div class="card">
+  <h2>☁️ Salesforce <span class="muted" style="font-weight:400">· opcionális</span></h2>
+  ${sf.error ? `<p class="fail">Salesforce-összekötés sikertelen: ${esc(sf.error)}</p>` : ""}
+  ${sf.justConnected ? `<p class="ok">✓ Salesforce összekötve.</p>` : ""}
+  ${sf.justDisconnected ? `<p class="muted">Salesforce-kapcsolat bontva.</p>` : ""}
+  ${
+    !s.user
+      ? `<p>A Salesforce-fiókod összekötéséhez előbb jelentkezz be a Microsoft-fiókoddal (fent).</p>`
+      : sf.connected && sf.info
+        ? `<p class="ok">✓ Összekötve: <b>${esc(sf.info.name ?? sf.info.username ?? "Salesforce-felhasználó")}</b>
+           ${sf.info.username ? `<span class="muted">(${esc(sf.info.username)})</span>` : ""}<br>
+           <span class="muted">Org: ${esc(sf.info.instanceUrl)} · összekötve: ${esc(sf.info.connectedAt.slice(0, 16).replace("T", " "))} UTC</span></p>
+           <p>Az AI a Salesforce-ban is <b>a te jogosultságaiddal</b>, csak olvasva dolgozik (SOQL/SOSL, rekordok, riportok).</p>
+           <p><a class="btn sec" href="/auth/salesforce/disconnect">Salesforce-kapcsolat bontása</a></p>`
+        : `<p>Kösd össze a <b>saját</b> Salesforce-fiókodat, hogy az AI a Salesforce-adataidat is elérje — kizárólag olvasva,
+           és csak azt, amit te is látsz a Salesforce-ban. A bejelentkezés a Salesforce oldalán történik (${esc(sf.loginUrl)}),
+           a gateway a jelszavadat nem látja.</p>
+           <p><a class="btn" href="/auth/salesforce/connect">☁️ Salesforce összekötése</a></p>`
+  }
+</div>`
+    : "";
+
   const latest = CHANGELOG[0];
   const whatsNewCard = latest
     ? `
@@ -137,7 +173,7 @@ ${renderNav("/")}
 <div class="muted">Read broadly, write narrowly · ${s.toolCount} tool (${s.writeToolCount} írási — csak Outlook levélküldés)</div>
 
 ${identityCard}
-
+${salesforceCard}
 ${whatsNewCard}
 ${renderPortalBody(s)}`;
 }

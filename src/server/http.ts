@@ -12,11 +12,14 @@ import { ADMIN_HTML } from "./adminUi.js";
 import { renderPortal, buildCapabilities, renderNav, PORTAL_STYLE } from "./portalUi.js";
 import { renderChangelogPage } from "./changelog.js";
 import { allEndpoints } from "../tools/endpoints/all.js";
-import { WRITE_TOOLSETS, type Toolset, type ToolContext } from "../tools/types.js";
-import { SettingsStore, isEntraConfigured, type MutableSettings } from "../settings.js";
+import { isToolEnabled } from "../tools/registry.js";
+import type { Toolset, ToolContext } from "../tools/types.js";
+import { SettingsStore, isEntraConfigured, isSalesforceConfigured, type MutableSettings } from "../settings.js";
+import { SalesforceAuth } from "../salesforce/auth.js";
 import type { AppConfig } from "../config.js";
 
 const ALL_TOOLSETS: Toolset[] = [
+  "salesforce",
   "mail",
   "shared-mail",
   "mail-write",
@@ -61,6 +64,8 @@ function decodeJwtPayload(token: string | undefined): Record<string, unknown> {
 interface WebSession {
   accessToken: string;
   expiresAt: number;
+  /** Entra object id - key of the user's optional Salesforce connection. */
+  oid?: string;
   name?: string;
   upn?: string;
 }
@@ -89,6 +94,8 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
   applySettings();
 
   const oauthProxy = new OAuthProxy(() => cfg, path.resolve("data"));
+  // Optional Salesforce: per-user OAuth connections keyed by Entra oid.
+  const sfAuth = new SalesforceAuth(() => cfg, path.resolve("data"));
 
   // ── Web portal sessions (landing-page Microsoft login) ──────────────
   const sessions = new Map<string, WebSession>();
@@ -99,6 +106,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     sessions.set(sid, {
       accessToken: tokens.access_token,
       expiresAt: Date.now() + Math.min(tokens.expires_in * 1000, SESSION_TTL_MS),
+      oid: (ac.oid ?? id.oid) as string | undefined,
       name: (id.name ?? ac.name) as string | undefined,
       upn: (id.preferred_username ?? ac.preferred_username ?? ac.upn) as string | undefined,
     });
@@ -119,11 +127,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     return { sid, sess };
   };
   const profileSummary = () => {
-    const enabled = allEndpoints.filter((d) => {
-      if (cfg.readOnly && (d.write || WRITE_TOOLSETS.includes(d.toolset))) return false;
-      if (cfg.enabledToolsets && !cfg.enabledToolsets.includes(d.toolset)) return false;
-      return true;
-    });
+    const enabled = allEndpoints.filter((d) => isToolEnabled(d, cfg));
     return {
       toolCount: enabled.length,
       writeToolCount: enabled.filter((d) => d.write).length,
@@ -164,6 +168,8 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
         graphError = "A szerver Entra ID konfigurációja hiányos.";
       }
     }
+    const sfConfigured = isSalesforceConfigured(cfg);
+    const sfInfo = sfConfigured && sess?.oid ? sfAuth.info(sess.oid) : null;
     res.type("html").send(
       renderPortal({
         configured: isEntraConfigured(cfg),
@@ -173,8 +179,47 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
         graphOk,
         graphError,
         loginError: typeof req.query.login_error === "string" ? req.query.login_error : undefined,
+        salesforce: sfConfigured
+          ? {
+              connected: !!sfInfo,
+              info: sfInfo ?? undefined,
+              loginUrl: cfg.salesforce.loginUrl,
+              error: typeof req.query.sf_error === "string" ? req.query.sf_error : undefined,
+              justConnected: req.query.sf === "connected",
+              justDisconnected: req.query.sf === "disconnected",
+            }
+          : undefined,
       })
     );
+  });
+
+  // ── Optional Salesforce: link the signed-in user's own Salesforce login ──
+  app.get("/auth/salesforce/connect", (req: Request, res: Response) => {
+    const { sess } = getSession(req);
+    if (!isSalesforceConfigured(cfg)) {
+      res.redirect("/?sf_error=" + encodeURIComponent("A Salesforce-integráció nincs beállítva (admin: Salesforce Connected App)."));
+      return;
+    }
+    if (!sess?.oid) {
+      res.redirect("/?login_error=" + encodeURIComponent("Előbb jelentkezz be a Microsoft-fiókoddal, utána kötheted össze a Salesforce-ot."));
+      return;
+    }
+    sfAuth.startConnect(sess.oid, sess.upn, res);
+  });
+
+  app.get("/auth/salesforce/callback", async (req: Request, res: Response) => {
+    try {
+      await sfAuth.handleCallback(req);
+      res.redirect("/?sf=connected");
+    } catch (err) {
+      res.redirect("/?sf_error=" + encodeURIComponent(err instanceof Error ? err.message : String(err)));
+    }
+  });
+
+  app.get("/auth/salesforce/disconnect", async (req: Request, res: Response) => {
+    const { sess } = getSession(req);
+    if (sess?.oid) await sfAuth.disconnect(sess.oid);
+    res.redirect("/?sf=disconnected");
   });
 
   app.get("/login", (_req: Request, res: Response) => {
@@ -197,7 +242,13 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
   });
 
   app.get("/healthz", (_req, res) => {
-    res.json({ status: "ok", name: "m365-reporting-mcp", version: "1.0.0", configured: isEntraConfigured(cfg) });
+    res.json({
+      status: "ok",
+      name: "m365-reporting-mcp",
+      version: "1.0.0",
+      configured: isEntraConfigured(cfg),
+      salesforce: isSalesforceConfigured(cfg),
+    });
   });
 
   // MCP resource metadata: this server is its own authorization server
@@ -248,12 +299,22 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     }
 
     const oboRef = obo;
+    const oid = (claims.oid as string) ?? "";
     const ctx: ToolContext = {
       graph: new GraphClient(() => oboRef.getGraphToken(token)),
       audit,
       user: userFromClaims(claims),
-      session: (claims.oid as string) ?? randomUUID(),
+      session: oid || randomUUID(),
       config: cfg,
+      ...(isSalesforceConfigured(cfg) && oid
+        ? {
+            salesforce: {
+              connectUrl: `${cfg.baseUrl}/`,
+              client: () => sfAuth.clientFor(oid),
+              info: () => sfAuth.info(oid),
+            },
+          }
+        : {}),
     };
 
     const { server } = buildMcpServer(ctx);
@@ -317,6 +378,16 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       configured: isEntraConfigured(cfg),
       registeredMcpClients: oauthProxy.registeredClientCount(),
       redirectUri: `${cfg.baseUrl}/auth/callback`,
+      salesforce: {
+        clientId: cfg.salesforce.clientId,
+        clientSecretSet: !!cfg.salesforce.clientSecret,
+        loginUrl: cfg.salesforce.loginUrl,
+        scopes: cfg.salesforce.scopes,
+        apiVersion: cfg.salesforce.apiVersion,
+        callbackUrl: sfAuth.callbackUrl(),
+        configured: isSalesforceConfigured(cfg),
+        connectedUsers: sfAuth.connectedCount(),
+      },
     });
   });
 
@@ -337,6 +408,17 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     for (const k of ["defaultPageItems", "maxPageItems", "maxDownloadBytes"] as const) {
       const v = Number(b[k]);
       if (Number.isFinite(v) && v > 0) patch[k] = Math.floor(v);
+    }
+    // Optional Salesforce Connected App (empty secret = keep, empty key = integration off).
+    if (typeof b.salesforceClientId === "string") patch.salesforceClientId = b.salesforceClientId.trim();
+    if (typeof b.salesforceClientSecret === "string") patch.salesforceClientSecret = b.salesforceClientSecret.trim();
+    if (typeof b.salesforceLoginUrl === "string") {
+      const u = b.salesforceLoginUrl.trim().replace(/\/+$/, "");
+      if (!u || /^https:\/\/[a-z0-9.-]+$/i.test(u)) patch.salesforceLoginUrl = u;
+    }
+    if (typeof b.salesforceScopes === "string") patch.salesforceScopes = b.salesforceScopes.trim();
+    if (typeof b.salesforceApiVersion === "string" && /^(v\d+\.\d+)?$/.test(b.salesforceApiVersion.trim())) {
+      patch.salesforceApiVersion = b.salesforceApiVersion.trim();
     }
     store.save(patch);
     applySettings();
@@ -377,17 +459,13 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
 
   app.get("/admin/api/tools", adminAuth, (_req, res) => {
     const tools = allEndpoints
-      .filter((d) => {
-        if (cfg.readOnly && (d.write || WRITE_TOOLSETS.includes(d.toolset))) return false;
-        if (cfg.enabledToolsets && !cfg.enabledToolsets.includes(d.toolset)) return false;
-        return true;
-      })
+      .filter((d) => isToolEnabled(d, cfg))
       .map((d) => ({
         name: d.name,
         toolset: d.toolset,
         write: !!d.write,
         method: d.method,
-        path: d.path,
+        path: d.provider === "salesforce" ? `Salesforce ${d.path}` : d.path,
         scopes: d.scopes,
         description: d.description,
       }));
@@ -418,5 +496,6 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     if (!isEntraConfigured(cfg)) {
       console.log(`  NOTE: Entra ID is NOT configured yet - open ${cfg.baseUrl}/admin to set it up.`);
     }
+    console.log(`  Salesforce   : ${isSalesforceConfigured(cfg) ? `optional toolset ON (callback ${sfAuth.callbackUrl()})` : "off (no Connected App configured)"}`);
   });
 }

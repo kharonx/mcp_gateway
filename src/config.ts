@@ -8,7 +8,26 @@ function num(v: string | undefined, dflt: number): number {
   return Number.isFinite(n) && n > 0 ? n : dflt;
 }
 
+/** Optional Salesforce Connected App (OAuth web-server flow). Empty clientId = integration off. */
+export interface SalesforceConfig {
+  clientId: string;
+  clientSecret: string;
+  /** https://login.salesforce.com, https://test.salesforce.com (sandbox) or a My Domain URL. */
+  loginUrl: string;
+  /** Space separated OAuth scopes requested (must be enabled on the Connected App). */
+  scopes: string;
+  /** REST API version, e.g. v62.0 */
+  apiVersion: string;
+}
+
+export const SALESFORCE_DEFAULTS = {
+  loginUrl: "https://login.salesforce.com",
+  scopes: "api refresh_token",
+  apiVersion: "v62.0",
+};
+
 export interface AppConfig {
+  salesforce: SalesforceConfig;
   tenantId: string;
   clientId: string;
   clientSecret: string;
@@ -42,6 +61,13 @@ export function loadConfig(argv: string[] = process.argv.slice(2)): AppConfig {
     maxDownloadBytes: num(process.env.MAX_DOWNLOAD_BYTES, 10 * 1024 * 1024),
     auditDir: path.resolve(process.env.AUDIT_DIR ?? "./logs"),
     adminKey: process.env.ADMIN_KEY ?? "",
+    salesforce: {
+      clientId: process.env.SF_CLIENT_ID ?? "",
+      clientSecret: process.env.SF_CLIENT_SECRET ?? "",
+      loginUrl: (process.env.SF_LOGIN_URL || SALESFORCE_DEFAULTS.loginUrl).replace(/\/+$/, ""),
+      scopes: process.env.SF_SCOPES || SALESFORCE_DEFAULTS.scopes,
+      apiVersion: process.env.SF_API_VERSION || SALESFORCE_DEFAULTS.apiVersion,
+    },
   };
 }
 

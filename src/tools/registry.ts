@@ -1,6 +1,9 @@
 import { z, type ZodRawShape } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { GraphError } from "../graph/client.js";
+import { SalesforceError } from "../salesforce/client.js";
+import { isSalesforceConfigured } from "../settings.js";
+import type { AppConfig } from "../config.js";
 import { resolveTimeRange, NAMED_RANGES } from "../graph/timeRange.js";
 import { withSource, withSourceList } from "../graph/source.js";
 import { extractContent } from "../content/extract.js";
@@ -142,7 +145,7 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
         tool: def.name,
         operation: def.write ? ("WRITE" as const) : ("READ" as const),
         resourceType: def.resourceType,
-        graphEndpoint: graphPath,
+        graphEndpoint: def.provider === "salesforce" ? `salesforce:${graphPath}` : graphPath,
         httpMethod: def.method,
       };
       try {
@@ -154,7 +157,9 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
         }
 
         let result: unknown;
-        if (def.binary) {
+        if (def.handler) {
+          result = await def.handler(args, ctx);
+        } else if (def.binary) {
           const bin = await ctx.graph.requestBinary(graphPath, {
             query: buildQueryParams(def, args).query,
             maxBytes: config.maxDownloadBytes,
@@ -211,7 +216,12 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
         const text = typeof result === "string" ? result : JSON.stringify(result, null, 2);
         return { content: [{ type: "text" as const, text }] };
       } catch (err) {
-        const message = err instanceof GraphError ? err.toToolMessage() : err instanceof Error ? err.message : String(err);
+        const message =
+          err instanceof GraphError || err instanceof SalesforceError
+            ? err.toToolMessage()
+            : err instanceof Error
+              ? err.message
+              : String(err);
         ctx.audit.log({
           ...auditBase,
           success: false,
@@ -225,13 +235,21 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
   );
 }
 
-/** Apply profile filtering (toolsets + read-only) then register everything. */
+/**
+ * Profile filter shared by the MCP server, the admin tool list and the portal:
+ * read-only mode, toolset allowlist, and optional providers (Salesforce tools
+ * exist only when a Connected App is configured).
+ */
+export function isToolEnabled(def: EndpointDef, cfg: AppConfig): boolean {
+  if (cfg.readOnly && (def.write || WRITE_TOOLSETS.includes(def.toolset))) return false;
+  if (cfg.enabledToolsets && !cfg.enabledToolsets.includes(def.toolset)) return false;
+  if (def.provider === "salesforce" && !isSalesforceConfigured(cfg)) return false;
+  return true;
+}
+
+/** Apply profile filtering (toolsets + read-only + providers) then register everything. */
 export function registerAllTools(server: McpServer, defs: EndpointDef[], ctx: ToolContext): EndpointDef[] {
-  const enabled = defs.filter((d) => {
-    if (ctx.config.readOnly && (d.write || WRITE_TOOLSETS.includes(d.toolset))) return false;
-    if (ctx.config.enabledToolsets && !ctx.config.enabledToolsets.includes(d.toolset)) return false;
-    return true;
-  });
+  const enabled = defs.filter((d) => isToolEnabled(d, ctx.config));
   for (const def of enabled) registerEndpointTool(server, def, ctx);
   return enabled;
 }

@@ -5,11 +5,11 @@
 Principle: **read broadly, write narrowly** - the only WRITE surface is Outlook mail
 (draft/send/reply/forward), each send gated by `confirm=true`.
 
-Total tools: **103** (17 WRITE, 86 READ)
+Total tools: **114** (17 WRITE, 97 READ)
 
-Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (5)
+Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (5), salesforce (11)
 
-| MCP tool | Toolset | R/W | HTTP | Graph endpoint (v1.0) | Delegated scopes | State | Capabilities |
+| MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
 | `list-mail-messages` | mail | READ | GET | `/me/messages` | Mail.Read | enabled | paginated, time-range, search |
 | `get-mail-message` | mail | READ | GET | `/me/messages/{messageId}` | Mail.Read | enabled |  |
@@ -114,6 +114,17 @@ Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), cale
 | `get-user-account-status-history` | users | READ | GET | `/auditLogs/directoryAudits` | AuditLog.Read.All, Directory.Read.All | enabled | paginated, time-range, search |
 | `list-directory-audits` | users | READ | GET | `/auditLogs/directoryAudits` | AuditLog.Read.All, Directory.Read.All | enabled | paginated, time-range |
 | `search-users` | users | READ | GET | `/users` | User.Read.All | enabled | paginated, search |
+| `salesforce-connection-status` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/limits` | Salesforce: api | optional (Connected App configured) |  |
+| `salesforce-soql-query` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/query` | Salesforce: api | optional (Connected App configured) | paginated |
+| `salesforce-sosl-search` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/search` | Salesforce: api | optional (Connected App configured) |  |
+| `list-salesforce-objects` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/sobjects` | Salesforce: api | optional (Connected App configured) |  |
+| `describe-salesforce-object` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/sobjects/{object}/describe` | Salesforce: api | optional (Connected App configured) |  |
+| `get-salesforce-record` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/sobjects/{object}/{id}` | Salesforce: api | optional (Connected App configured) |  |
+| `list-salesforce-records` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/query` | Salesforce: api | optional (Connected App configured) | paginated, time-range |
+| `get-salesforce-recent-items` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/recent` | Salesforce: api | optional (Connected App configured) |  |
+| `get-salesforce-account-overview` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/query` | Salesforce: api | optional (Connected App configured) |  |
+| `list-salesforce-reports` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/query` | Salesforce: api | optional (Connected App configured) | paginated |
+| `run-salesforce-report` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/analytics/reports/{reportId}` | Salesforce: api | optional (Connected App configured) |  |
 
 ## Deliberately NOT exposed (safety layer, spec sections 19-20)
 
@@ -121,3 +132,4 @@ Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), cale
 - No `$batch` passthrough.
 - No Calendar/Teams/Files/Sites/OneNote/User/Group write, no delete anywhere.
 - Mail delete / folder delete / destructive mailbox operations are excluded.
+- Salesforce (optional): read-only only - no record create/update/delete, no Apex/Bulk/Metadata API; every call uses the user's own linked Salesforce login.

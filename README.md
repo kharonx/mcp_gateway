@@ -2,7 +2,8 @@
 
 Vállalati MCP szerver, amelyen keresztül ChatGPT, Claude és más MCP-kompatibilis AI-kliensek
 **kontrolláltan** férnek hozzá a Microsoft 365 információforrásaihoz (Outlook, Naptár, Teams,
-meeting-átiratok, OneNote, SharePoint, OneDrive, Loop, Search, Users).
+meeting-átiratok, OneNote, SharePoint, OneDrive, Loop, Search, Users) — és opcionálisan, külön
+felhasználói összekötéssel, egy Salesforce orghoz (csak olvasás, lásd lent).
 
 **Alapelv: read broadly, write narrowly.** Széles READ réteg a bejelentkezett felhasználó
 tényleges M365 jogosultságain belül; a WRITE réteg szűk és explicit: Outlook levél
@@ -111,6 +112,29 @@ Csatlakoztatás ChatGPT-ből:
 
 Claude Desktop / Claude Code: ugyanez az URL remote MCP-ként, vagy lokálisan stdio mód
 (`claude mcp add m365-reporting -- node dist/index.js --stdio`).
+
+## Salesforce-összekötés (opcionális)
+
+A gateway a Microsoft 365 mellett **fakultatívan** egy Salesforce orgot is elér — ugyanazzal az
+elvvel: *delegált, csak olvasás, sosem több, mint amit a felhasználó maga lát*.
+
+- **Bekapcsolás:** `/admin` → *Salesforce (opcionális)* → a Connected App **Consumer Key / Secret**
+  és a login URL (`https://login.salesforce.com`, sandboxnál `https://test.salesforce.com`).
+  Amíg a Consumer Key üres, a `salesforce` toolset nem is regisztrálódik (env: `SF_CLIENT_ID`, …).
+- **Connected App követelmények:** OAuth engedélyezve; **Callback URL** =
+  `https://<BASE_URL>/auth/salesforce/callback` (az admin felület mutatja); OAuth scope-ok:
+  *Manage user data via APIs (api)* és *Perform requests at any time (refresh_token, offline_access)*.
+  PKCE támogatott (a gateway mindig küld code_challenge-et). Írási vagy admin scope nem kell.
+- **Felhasználói összekötés:** a kezdőoldalon Microsoft-bejelentkezés után *„Salesforce összekötése”* →
+  a felhasználó a Salesforce oldalán, a **saját** fiókjával lép be. A refresh token Entra object id-hoz
+  kötve a `data/salesforce-tokens.json`-ben tárolódik (0600), a kapcsolat a kezdőoldalon bontható
+  (token revoke). Minden Salesforce-hívás ezzel a felhasználói tokennel fut — integrációs/app-only
+  felhasználó nincs.
+- **Toolok (READ):** `salesforce-connection-status`, `salesforce-soql-query`, `salesforce-sosl-search`,
+  `list-salesforce-objects`, `describe-salesforce-object`, `get-salesforce-record`,
+  `list-salesforce-records`, `get-salesforce-recent-items`, `get-salesforce-account-overview`,
+  `list-salesforce-reports`, `run-salesforce-report`. Nincs rekord create/update/delete, Apex, Bulk
+  vagy Metadata API. Az auditnaplóban a Salesforce-hívások `salesforce:` előtaggal jelennek meg.
 
 ## Biztonsági réteg (spec 19–20)
 

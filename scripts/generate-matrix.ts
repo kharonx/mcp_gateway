@@ -14,7 +14,9 @@ const rows = allEndpoints.map((d) => {
   if (d.query?.search || d.buildQuery) flags.push("search");
   if (d.binary) flags.push("content-download");
   if (d.confirmRequired) flags.push("confirm-required");
-  return `| \`${d.name}\` | ${d.toolset} | ${d.write ? "**WRITE**" : "READ"} | ${d.method} | \`${d.path}\` | ${d.scopes.join(", ")} | enabled | ${flags.join(", ")} |`;
+  const endpoint = d.provider === "salesforce" ? `Salesforce ${d.path}` : d.path;
+  const state = d.provider === "salesforce" ? "optional (Connected App configured)" : "enabled";
+  return `| \`${d.name}\` | ${d.toolset} | ${d.write ? "**WRITE**" : "READ"} | ${d.method} | \`${endpoint}\` | ${d.scopes.join(", ")} | ${state} | ${flags.join(", ")} |`;
 });
 
 const byToolset = new Map<string, number>();
@@ -31,7 +33,7 @@ Total tools: **${allEndpoints.length}** (${allEndpoints.filter((d) => d.write).l
 
 Toolsets: ${[...byToolset.entries()].map(([k, v]) => `${k} (${v})`).join(", ")}
 
-| MCP tool | Toolset | R/W | HTTP | Graph endpoint (v1.0) | Delegated scopes | State | Capabilities |
+| MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
 ${rows.join("\n")}
 
@@ -41,6 +43,7 @@ ${rows.join("\n")}
 - No \`$batch\` passthrough.
 - No Calendar/Teams/Files/Sites/OneNote/User/Group write, no delete anywhere.
 - Mail delete / folder delete / destructive mailbox operations are excluded.
+- Salesforce (optional): read-only only - no record create/update/delete, no Apex/Bulk/Metadata API; every call uses the user's own linked Salesforce login.
 `;
 
 const out = path.resolve("docs/tool-matrix.md");

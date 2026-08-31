@@ -74,6 +74,20 @@ export const ADMIN_HTML = `<!doctype html>
       <label class="f">Max. letöltés (byte) <input type="number" id="s-maxDownloadBytes" min="1024"></label>
     </div>
   </fieldset>
+  <fieldset>
+    <legend>Salesforce (opcionális)</legend>
+    <p class="muted" style="margin-top:0">Ha kitöltöd, megjelenik a <code>salesforce</code> toolset (csak olvasás: SOQL/SOSL, rekordok, riportok).
+    Minden felhasználó a kezdőoldalon a <b>saját</b> Salesforce-fiókját köti össze — a gateway sosem lát többet, mint az adott felhasználó.
+    Üresen hagyott Consumer Key = integráció kikapcsolva.</p>
+    <label class="f">Consumer Key (Connected App) <input type="text" id="s-sfClientId" placeholder="Consumer Key"></label>
+    <label class="f">Consumer Secret <input type="password" id="s-sfClientSecret" placeholder="(változatlan, ha üresen hagyod)"></label>
+    <label class="f">Login URL <input type="text" id="s-sfLoginUrl" placeholder="https://login.salesforce.com (sandbox: https://test.salesforce.com)"></label>
+    <label class="f">OAuth scope-ok <input type="text" id="s-sfScopes" placeholder="api refresh_token"></label>
+    <label class="f">REST API verzió <input type="text" id="s-sfApiVersion" placeholder="v62.0"></label>
+    <div class="pill">Connected App <b>Callback URL</b>: <code id="s-sfCallback">–</code></div>
+    <div class="pill">Összekötött felhasználók: <b id="s-sfUsers">0</b></div>
+    <div class="pill" id="s-sfState">–</div>
+  </fieldset>
   <button class="primary" onclick="saveSettings()">Mentés</button>
   <button class="sec" onclick="testConnection()">Entra kapcsolat tesztelése</button>
   <span id="s-msg" class="msg"></span>
@@ -133,6 +147,15 @@ async function loadSettings(){
   document.getElementById('s-defaultPageItems').value = s.defaultPageItems;
   document.getElementById('s-maxPageItems').value = s.maxPageItems;
   document.getElementById('s-maxDownloadBytes').value = s.maxDownloadBytes;
+  const sf = s.salesforce || {};
+  document.getElementById('s-sfClientId').value = sf.clientId || '';
+  document.getElementById('s-sfClientSecret').placeholder = sf.clientSecretSet ? '******** (változatlan, ha üresen hagyod)' : 'Consumer Secret';
+  document.getElementById('s-sfLoginUrl').value = sf.loginUrl || '';
+  document.getElementById('s-sfScopes').value = sf.scopes || '';
+  document.getElementById('s-sfApiVersion').value = sf.apiVersion || '';
+  document.getElementById('s-sfCallback').textContent = sf.callbackUrl || '–';
+  document.getElementById('s-sfUsers').textContent = sf.connectedUsers || 0;
+  document.getElementById('s-sfState').textContent = sf.configured ? 'Salesforce toolset aktív ✓' : 'Salesforce integráció kikapcsolva';
   const box = document.getElementById('s-toolsets');
   box.innerHTML = s.toolsetsAvailable.map(t =>
     '<label><input type="checkbox" name="ts" value="'+t+'"'+(s.enabledToolsets && s.enabledToolsets.includes(t)?' checked':'')+'> '+t+'</label>').join('');
@@ -150,11 +173,17 @@ async function saveSettings(){
     defaultPageItems: +document.getElementById('s-defaultPageItems').value,
     maxPageItems: +document.getElementById('s-maxPageItems').value,
     maxDownloadBytes: +document.getElementById('s-maxDownloadBytes').value,
+    salesforceClientId: document.getElementById('s-sfClientId').value,
+    salesforceClientSecret: document.getElementById('s-sfClientSecret').value,
+    salesforceLoginUrl: document.getElementById('s-sfLoginUrl').value,
+    salesforceScopes: document.getElementById('s-sfScopes').value,
+    salesforceApiVersion: document.getElementById('s-sfApiVersion').value,
   };
   const m = document.getElementById('s-msg');
   try { await api('/admin/api/settings', { method: 'PUT', body: JSON.stringify(body) });
     m.textContent = 'Mentve ✓'; m.className = 'msg ok';
     document.getElementById('s-clientSecret').value = '';
+    document.getElementById('s-sfClientSecret').value = '';
     await loadSettings(); await loadTools();
   } catch(e){ m.textContent = 'Hiba: ' + e.message; m.className = 'msg fail'; }
 }
