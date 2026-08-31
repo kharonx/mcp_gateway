@@ -9,7 +9,7 @@ export interface PortalState {
   writeToolCount: number;
   capabilities: string[];
   writeCapabilities: string[];
-  user?: { name?: string; mail?: string; upn?: string; jobTitle?: string };
+  user?: { name?: string; mail?: string; upn?: string; jobTitle?: string; isAdmin?: boolean };
   graphOk?: boolean;
   graphError?: string;
   loginError?: string;
@@ -97,7 +97,7 @@ export function renderPortal(s: PortalState): string {
       <div class="avatar">${esc((s.user.name ?? "?").trim().charAt(0).toUpperCase())}</div>
       <div>
         <div class="name">${esc(s.user.name ?? s.user.upn ?? "Ismeretlen felhasználó")}</div>
-        <div class="muted">${esc(s.user.mail ?? s.user.upn ?? "")}${s.user.jobTitle ? " · " + esc(s.user.jobTitle) : ""}</div>
+        <div class="muted">${esc(s.user.mail ?? s.user.upn ?? "")}${s.user.jobTitle ? " · " + esc(s.user.jobTitle) : ""}${s.user.isAdmin ? ' · <b>gateway admin</b> (<a href="/admin">admin felület</a>)' : ""}</div>
       </div>
     </div>
     ${

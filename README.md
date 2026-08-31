@@ -113,6 +113,17 @@ Csatlakoztatás ChatGPT-ből:
 Claude Desktop / Claude Code: ugyanez az URL remote MCP-ként, vagy lokálisan stdio mód
 (`claude mcp add m365-reporting -- node dist/index.js --stdio`).
 
+## Adminok és felhasználók
+
+- **Admin = bejelentkezett Microsoft-felhasználó admin joggal.** A `/admin` felület a kezdőoldali
+  Microsoft-belépés sütijét használja; adminként nem kell kulcsot megadni.
+- **Első admin (bootstrap):** belépés a kezdőoldalon → `/admin` → az admin kulcs (`ADMIN_KEY`)
+  megadásával „Adminná válok". Utána a *Felhasználók* fülön bármely, már belépett (portál vagy
+  MCP-hívás) felhasználó adminná tehető / az admin jog visszavonható (az utolsó admin nem vehető el).
+- Az `x-admin-key` fejléc továbbra is működik tartalékként (headless konfiguráció, scriptek).
+- A *Felhasználók* fül mutatja a Salesforce-összekötést is, és adminként bontható egy felhasználó
+  Salesforce-kapcsolata (token revoke). Tároló: `data/users.json`.
+
 ## Salesforce-összekötés (opcionális)
 
 A gateway a Microsoft 365 mellett **fakultatívan** egy Salesforce orgot is elér — ugyanazzal az
@@ -125,6 +136,9 @@ elvvel: *delegált, csak olvasás, sosem több, mint amit a felhasználó maga l
   `https://<BASE_URL>/auth/salesforce/callback` (az admin felület mutatja); OAuth scope-ok:
   *Manage user data via APIs (api)* és *Perform requests at any time (refresh_token, offline_access)*.
   PKCE támogatott (a gateway mindig küld code_challenge-et). Írási vagy admin scope nem kell.
+  Az admin felületen a *Salesforce kapcsolat tesztelése* gomb felhasználói belépés nélkül ellenőrzi a
+  Consumer Key/Secret párost és a Callback URL regisztrációját, és — ha a te fiókod össze van kötve —
+  a saját kapcsolatodat is.
 - **Felhasználói összekötés:** a kezdőoldalon Microsoft-bejelentkezés után *„Salesforce összekötése”* →
   a felhasználó a Salesforce oldalán, a **saját** fiókjával lép be. A refresh token Entra object id-hoz
   kötve a `data/salesforce-tokens.json`-ben tárolódik (0600), a kapcsolat a kezdőoldalon bontható

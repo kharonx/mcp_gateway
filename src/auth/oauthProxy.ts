@@ -37,6 +37,8 @@ interface PendingAuth {
   redirectUri?: string;
   clientState?: string;
   codeChallenge?: string;
+  /** Web login only: relative path to return to after login (e.g. /admin). */
+  next?: string;
   createdAt: number;
 }
 
@@ -111,14 +113,16 @@ export class OAuthProxy {
   }
 
   /** Set by the HTTP server: called when a portal ("web") login completes at /auth/callback. */
-  webLoginHandler?: (tokens: EntraTokens, req: Request, res: Response) => void | Promise<void>;
+  webLoginHandler?: (tokens: EntraTokens, req: Request, res: Response, next: string) => void | Promise<void>;
 
   /** Start an Entra login for the web portal (landing page) using the same redirect URI. */
-  startWebLogin(res: Response): void {
+  startWebLogin(res: Response, next = "/"): void {
     this.gc();
     const cfg = this.getCfg();
     const pendingId = crypto.randomUUID();
-    this.pending.set(pendingId, { kind: "web", createdAt: Date.now() });
+    // Only same-origin relative paths may be used as a post-login target.
+    const safeNext = /^\/[A-Za-z0-9_\-/?=&.]*$/.test(next) && !next.startsWith("//") ? next : "/";
+    this.pending.set(pendingId, { kind: "web", next: safeNext, createdAt: Date.now() });
     const entra = new URL(`https://login.microsoftonline.com/${cfg.tenantId}/oauth2/v2.0/authorize`);
     entra.searchParams.set("client_id", cfg.clientId);
     entra.searchParams.set("response_type", "code");
@@ -237,8 +241,8 @@ export class OAuthProxy {
             code: q.code,
             redirect_uri: `${cfg.baseUrl}/auth/callback`,
           });
-          if (this.webLoginHandler) await this.webLoginHandler(tokens, req, res);
-          else res.redirect("/");
+          if (this.webLoginHandler) await this.webLoginHandler(tokens, req, res, p.next ?? "/");
+          else res.redirect(p.next ?? "/");
         } catch (err) {
           res.redirect(`/?login_error=${encodeURIComponent(err instanceof Error ? err.message : "login failed")}`);
         }

@@ -185,6 +185,95 @@ export class SalesforceAuth {
     }
   }
 
+  /**
+   * Admin connection test WITHOUT user interaction:
+   *  1. token endpoint with a bogus authorization code -> Salesforce validates
+   *     Consumer Key + Secret first (invalid_grant = credentials accepted);
+   *  2. authorize endpoint probe -> detects redirect_uri_mismatch (callback
+   *     URL not registered on the Connected App);
+   *  3. optionally the caller's own linked connection (API limits call).
+   */
+  async testApp(oid?: string): Promise<{ ok: boolean; checks: { name: string; ok: boolean | null; message: string }[] }> {
+    const checks: { name: string; ok: boolean | null; message: string }[] = [];
+    const sf = this.getCfg().salesforce;
+    if (!sf.clientId || !sf.clientSecret) {
+      return { ok: false, checks: [{ name: "config", ok: false, message: "Consumer Key és Consumer Secret megadása szükséges." }] };
+    }
+    // 1. credentials
+    try {
+      const body = new URLSearchParams({
+        grant_type: "authorization_code",
+        code: "gateway-connection-test",
+        client_id: sf.clientId,
+        client_secret: sf.clientSecret,
+        redirect_uri: this.callbackUrl(),
+      });
+      const res = await fetch(`${sf.loginUrl}/services/oauth2/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+      });
+      const data = (await res.json().catch(() => ({}))) as Record<string, string>;
+      const err = String(data.error ?? "");
+      const desc = String(data.error_description ?? "");
+      if (err === "invalid_grant") {
+        checks.push({ name: "credentials", ok: true, message: `Consumer Key és Secret érvényes (${sf.loginUrl} elfogadta a klienst).` });
+      } else if (err === "invalid_client_id") {
+        checks.push({ name: "credentials", ok: false, message: `Consumer Key hibás: ${desc}` });
+      } else if (err === "invalid_client") {
+        checks.push({ name: "credentials", ok: false, message: `Consumer Secret hibás: ${desc}` });
+      } else if (data.access_token) {
+        checks.push({ name: "credentials", ok: true, message: "Token endpoint elérhető, kliens elfogadva." });
+      } else {
+        checks.push({ name: "credentials", ok: false, message: `${err || res.status}: ${desc || "váratlan válasz a token endpointtól"}` });
+      }
+    } catch (e) {
+      checks.push({ name: "credentials", ok: false, message: `Login URL nem érhető el (${sf.loginUrl}): ${e instanceof Error ? e.message : String(e)}` });
+      return { ok: false, checks };
+    }
+    // 2. callback URL registration
+    try {
+      const u = new URL(`${sf.loginUrl}/services/oauth2/authorize`);
+      u.searchParams.set("response_type", "code");
+      u.searchParams.set("client_id", sf.clientId);
+      u.searchParams.set("redirect_uri", this.callbackUrl());
+      u.searchParams.set("scope", sf.scopes);
+      const res = await fetch(u, { redirect: "manual" });
+      const loc = res.headers.get("location") ?? "";
+      const text = res.status === 200 ? await res.text() : "";
+      const blob = decodeURIComponent(loc) + " " + text.slice(0, 20000);
+      if (/redirect_uri_mismatch/i.test(blob)) {
+        checks.push({ name: "callback", ok: false, message: `A Callback URL nincs felvéve a Connected Appban: ${this.callbackUrl()}` });
+      } else if (/invalid_client_id/i.test(blob)) {
+        checks.push({ name: "callback", ok: false, message: "Consumer Key ismeretlen az authorize endpointon." });
+      } else if (/oauth_error_code|error=/i.test(blob)) {
+        checks.push({ name: "callback", ok: null, message: `Authorize endpoint hibát jelzett: ${loc || text.slice(0, 200)}` });
+      } else if (res.status === 200 || (res.status >= 300 && res.status < 400)) {
+        checks.push({ name: "callback", ok: true, message: `Callback URL elfogadva (${this.callbackUrl()}) - a Salesforce a bejelentkezési oldalt adja.` });
+      } else {
+        checks.push({ name: "callback", ok: null, message: `Authorize endpoint HTTP ${res.status} - nem egyértelmű.` });
+      }
+    } catch (e) {
+      checks.push({ name: "callback", ok: null, message: `Authorize próba sikertelen: ${e instanceof Error ? e.message : String(e)}` });
+    }
+    // 3. caller's own connection
+    if (oid) {
+      const client = this.clientFor(oid);
+      if (!client) {
+        checks.push({ name: "own-connection", ok: null, message: "A te Salesforce-fiókod még nincs összekötve (kezdőoldal → Salesforce összekötése)." });
+      } else {
+        try {
+          const l = await client.request("GET", client.data("/limits"));
+          const api = l?.DailyApiRequests ?? {};
+          checks.push({ name: "own-connection", ok: true, message: `Saját kapcsolat OK: ${client.instanceUrl} (${client.connection.username ?? client.connection.userId}), napi API-keret: ${api.Remaining ?? "?"}/${api.Max ?? "?"}` });
+        } catch (e) {
+          checks.push({ name: "own-connection", ok: false, message: `Saját kapcsolat hibás: ${e instanceof Error ? e.message : String(e)}` });
+        }
+      }
+    }
+    return { ok: checks.every((c) => c.ok !== false), checks };
+  }
+
   /** A client bound to this user's connection, or null when not connected. */
   clientFor(oid: string): SalesforceClient | null {
     const c = this.connections.get(oid);

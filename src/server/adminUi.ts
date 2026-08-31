@@ -41,17 +41,35 @@ export const ADMIN_HTML = `<!doctype html>
 <body>
 <h1>Microsoft 365 Reporting MCP – Admin</h1>
 <div class="muted">Read broadly, write narrowly · v1.0</div>
-<div class="keybar">
+<div class="keybar" id="authbar">
+  <span class="muted">Betöltés…</span>
+</div>
+<div class="keybar" id="keybar" style="display:none">
   <input id="key" type="password" placeholder="Admin kulcs (ADMIN_KEY)">
-  <button class="sec" onclick="saveKey()">Belépés</button>
+  <button class="sec" id="keybtn" onclick="saveKey()">Belépés kulccsal</button>
   <span id="status" class="muted"></span>
 </div>
 
 <nav>
   <button data-tab="settings" class="active" onclick="showTab('settings')">⚙️ Beállítások</button>
+  <button data-tab="users" onclick="showTab('users')">👥 Felhasználók</button>
   <button data-tab="tools" onclick="showTab('tools')">🧰 Toolok</button>
   <button data-tab="audit" onclick="showTab('audit')">📜 Napló</button>
 </nav>
+
+<section id="tab-users">
+  <div class="filters">
+    <input id="u-filter" placeholder="Szűrés névre / e-mailre…" oninput="renderUsers()">
+    <button class="sec" onclick="loadUsers()">Frissítés</button>
+    <span class="muted" id="u-count"></span>
+  </div>
+  <div class="wrap"><table><thead>
+  <tr><th>Név</th><th>Felhasználó (UPN)</th><th>Első belépés</th><th>Utolsó aktivitás</th><th>MCP-hívás</th><th>Salesforce</th><th>Admin</th></tr>
+  </thead><tbody id="u-body"></tbody></table></div>
+  <p class="muted">Itt mindenki megjelenik, aki a kezdőoldalon Microsoft-fiókkal bejelentkezett vagy MCP-kliensből hívta a gatewayt.
+  Admin jogot csak már belépett felhasználó kaphat; az utolsó admin joga nem vonható vissza. A Salesforce-oszlopban egy felhasználó
+  összekötése bontható (a Salesforce refresh token visszavonásra kerül) — újra összekötni csak ő maga tudja a kezdőoldalon.</p>
+</section>
 
 <section id="tab-settings" class="active">
   <fieldset>
@@ -87,6 +105,8 @@ export const ADMIN_HTML = `<!doctype html>
     <div class="pill">Connected App <b>Callback URL</b>: <code id="s-sfCallback">–</code></div>
     <div class="pill">Összekötött felhasználók: <b id="s-sfUsers">0</b></div>
     <div class="pill" id="s-sfState">–</div>
+    <div style="margin-top:.6rem"><button class="sec" onclick="testSalesforce()">Salesforce kapcsolat tesztelése</button> <span id="s-sfmsg" class="msg"></span></div>
+    <ul id="s-sfchecks" class="muted" style="margin:.4rem 0 0; padding-left:1.2rem"></ul>
   </fieldset>
   <button class="primary" onclick="saveSettings()">Mentés</button>
   <button class="sec" onclick="testConnection()">Entra kapcsolat tesztelése</button>
@@ -123,12 +143,65 @@ export const ADMIN_HTML = `<!doctype html>
 
 <script>
 let TOOLS = [];
+let ME = {};
+let USERS = [];
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function fmt(d){ return d ? String(d).replace('T',' ').slice(0,16) : '–'; }
 async function api(p, opts){
-  const r = await fetch(p, Object.assign({ headers: { 'x-admin-key': localStorage.adminKey || '', 'content-type': 'application/json' } }, opts||{}));
-  if (r.status === 401) throw new Error('Hibás admin kulcs');
-  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const r = await fetch(p, Object.assign({ credentials: 'same-origin', headers: { 'x-admin-key': localStorage.adminKey || '', 'content-type': 'application/json' } }, opts||{}));
+  if (!r.ok) { let m = 'HTTP ' + r.status; try { const j = await r.json(); if (j.error) m = j.error; } catch(e){} throw new Error(m); }
   return r.json();
+}
+async function loadMe(){
+  ME = await api('/admin/api/me');
+  const bar = document.getElementById('authbar'); const kb = document.getElementById('keybar');
+  if (ME.isAdmin) {
+    bar.innerHTML = '<span class="ok">Bejelentkezve adminként: ' + esc(ME.name || ME.upn) + '</span> <span class="muted">(' + esc(ME.upn||'') + ')</span> · <a href="/logout">Kijelentkezés</a>';
+    kb.style.display = 'none';
+  } else if (ME.loggedIn) {
+    bar.innerHTML = '<span>Bejelentkezve: <b>' + esc(ME.name || ME.upn) + '</b> — <span class="fail">nem admin</span>.</span> <span class="muted">Kérj admin jogot egy admintól, vagy add meg az admin kulcsot, és adminná válsz:</span>';
+    kb.style.display = 'flex'; document.getElementById('keybtn').textContent = 'Adminná válok az admin kulccsal';
+  } else {
+    bar.innerHTML = (ME.entraConfigured ? '<a class="sec" style="padding:.4rem .9rem;border:1px solid currentColor;border-radius:.5rem;text-decoration:none;color:inherit" href="/login?next=/admin">🔑 Bejelentkezés Microsoft-fiókkal</a> <span class="muted">(adminként nem kell kulcs)</span>' : '<span class="muted">Entra ID még nincs beállítva — első beállítás az admin kulccsal:</span>');
+    kb.style.display = 'flex'; document.getElementById('keybtn').textContent = 'Belépés kulccsal';
+  }
+  return ME;
+}
+async function saveKey(){
+  const key = document.getElementById('key').value;
+  const st = document.getElementById('status');
+  if (ME.loggedIn && !ME.isAdmin) {
+    try { await api('/admin/api/claim-admin', { method: 'POST', body: JSON.stringify({ key }) }); st.textContent = 'Admin jog megadva ✓'; st.className = 'ok'; document.getElementById('key').value=''; await loadMe(); await loadAll(); }
+    catch(e){ st.textContent = e.message; st.className = 'fail'; }
+    return;
+  }
+  localStorage.adminKey = key; loadAll();
+}
+async function loadUsers(){ USERS = await api('/admin/api/users'); renderUsers(); }
+function renderUsers(){
+  const q = (document.getElementById('u-filter').value || '').toLowerCase();
+  const rows = USERS.filter(u => !q || (u.name||'').toLowerCase().includes(q) || (u.upn||'').toLowerCase().includes(q));
+  document.getElementById('u-body').innerHTML = rows.map(u =>
+    '<tr><td>'+esc(u.name||'–')+'</td><td>'+esc(u.upn||u.oid)+'</td><td>'+esc(fmt(u.firstSeenAt))+'</td><td>'+esc(fmt(u.lastSeenAt))+'</td><td>'+esc(u.mcpRequests||0)+'</td>'+
+    '<td>'+(u.salesforce ? '<span class="ok">✓</span> '+esc(u.salesforce.username||u.salesforce.userId)+'<br><span class="muted">'+esc(u.salesforce.instanceUrl)+' · '+esc(fmt(u.salesforce.connectedAt))+'</span><br><button class="sec" onclick="disconnectSf(\\''+u.oid+'\\')">Kapcsolat bontása</button>' : '<span class="muted">nincs</span>')+'</td>'+
+    '<td>'+(u.isAdmin ? '<span class="badge w">ADMIN</span><br><span class="muted">'+esc(u.adminGrantedBy||'')+'</span><br><button class="sec" onclick="setAdmin(\\''+u.oid+'\\',false)">Admin jog elvétele</button>' : '<button class="sec" onclick="setAdmin(\\''+u.oid+'\\',true)">Adminná tesz</button>')+'</td></tr>').join('');
+  document.getElementById('u-count').textContent = rows.length + ' / ' + USERS.length + ' felhasználó';
+}
+async function setAdmin(oid, isAdmin){
+  try { await api('/admin/api/users/' + encodeURIComponent(oid), { method: 'PUT', body: JSON.stringify({ isAdmin }) }); await loadUsers(); await loadMe(); }
+  catch(e){ alert('Hiba: ' + e.message); }
+}
+async function disconnectSf(oid){
+  try { await api('/admin/api/users/' + encodeURIComponent(oid) + '/salesforce', { method: 'DELETE' }); await loadUsers(); }
+  catch(e){ alert('Hiba: ' + e.message); }
+}
+async function testSalesforce(){
+  const m = document.getElementById('s-sfmsg'); const ul = document.getElementById('s-sfchecks');
+  m.textContent = 'Tesztelés…'; m.className = 'msg muted'; ul.innerHTML = '';
+  try { const r = await api('/admin/api/test-salesforce', { method: 'POST', body: '{}' });
+    m.textContent = r.ok ? '✓ Salesforce Connected App rendben' : '✗ Hiba a Salesforce-beállításban'; m.className = 'msg ' + (r.ok ? 'ok' : 'fail');
+    ul.innerHTML = r.checks.map(c => '<li class="'+(c.ok===true?'ok':c.ok===false?'fail':'muted')+'">'+(c.ok===true?'✓ ':c.ok===false?'✗ ':'• ')+esc(c.message)+'</li>').join('');
+  } catch(e){ m.textContent = 'Hiba: ' + e.message; m.className = 'msg fail'; }
 }
 function showTab(t){
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
@@ -227,11 +300,10 @@ async function loadAudit(){
 }
 async function loadAll(){
   const st = document.getElementById('status');
-  try { await loadSettings(); await loadTools(); await loadAuditDays(); await loadAudit(); }
-  catch(e){ st.textContent = 'Hiba: ' + e.message; }
+  try { await loadSettings(); await loadUsers(); await loadTools(); await loadAuditDays(); await loadAudit(); st.textContent = ''; }
+  catch(e){ st.textContent = e.message; st.className = 'fail'; }
 }
-function saveKey(){ localStorage.adminKey = document.getElementById('key').value; loadAll(); }
-if (localStorage.adminKey) loadAll();
+loadMe().then(me => { if (me.isAdmin || me.viaKey || localStorage.adminKey) loadAll(); }).catch(e => { document.getElementById('authbar').textContent = 'Hiba: ' + e.message; });
 </script>
 </body>
 </html>`;

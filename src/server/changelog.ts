@@ -18,9 +18,11 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-08-31",
-    commit: "a6f529e+",
-    title: "Salesforce-összekötés (opcionális)",
+    commit: "56ed426+",
+    title: "Salesforce-összekötés (opcionális), adminok és felhasználók",
     items: [
+      "Admin felület Microsoft-belépéssel: aki a kezdőoldalon bejelentkezett és admin, annak nem kell admin kulcs. Új \"Felhasználók\" fül: minden, a portálon vagy MCP-n keresztül már belépett felhasználó látszik (utolsó aktivitás, MCP-hívások, Salesforce-kapcsolat), innen adható vagy vonható vissza az admin jog, és bontható egy felhasználó Salesforce-kapcsolata. Az admin kulcs csak az első admin létrehozásához (bootstrap) és tartaléknak marad.",
+      "Salesforce kapcsolatteszt az admin felületen: Consumer Key/Secret és a Callback URL regisztrációjának ellenőrzése felhasználói bejelentkezés nélkül, plusz a saját összekötött fiók próbája.",
       "Új, opcionális Salesforce toolset a Microsoft 365 mellett: fiókok, kapcsolatok, lehetőségek, ügyek és tetszőleges (egyedi) objektumok lekérdezése, SOQL/SOSL, objektumleírás, egy fiók 360°-os áttekintése (kapcsolatok, pipeline, ügyek, aktivitások), legutóbb megnyitott rekordok, mentett riportok listázása és futtatása.",
       "Csak olvasás: rekord-létrehozás, -módosítás vagy -törlés nincs; a gateway a Salesforce-ban is kizárólag a bejelentkezett felhasználó saját jogosultságaival dolgozik.",
       "Összekötés a kezdőoldalon: Microsoft-bejelentkezés után \"Salesforce összekötése\" — mindenki a saját Salesforce-fiókjával lép be a Salesforce oldalán (OAuth 2.0 + PKCE), a jelszót a gateway nem látja; a kapcsolat bármikor bontható.",
