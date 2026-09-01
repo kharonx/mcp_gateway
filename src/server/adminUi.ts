@@ -97,12 +97,18 @@ export const ADMIN_HTML = `<!doctype html>
     <p class="muted" style="margin-top:0">Ha kitöltöd, megjelenik a <code>salesforce</code> toolset (csak olvasás: SOQL/SOSL, rekordok, riportok).
     Minden felhasználó a kezdőoldalon a <b>saját</b> Salesforce-fiókját köti össze — a gateway sosem lát többet, mint az adott felhasználó.
     Üresen hagyott Consumer Key = integráció kikapcsolva.</p>
+    <div class="pill" style="display:block; max-width:640px">
+      <b>1. lépés — ezt másold a Salesforce Connected App „Callback URL” mezőjébe</b> (a gateway saját címe, itt nem szerkeszthető):<br>
+      <input type="text" id="s-sfCallback" readonly value="–" style="width:100%; max-width:520px; margin-top:.3rem; padding:.35rem .5rem; box-sizing:border-box" onclick="this.select()">
+      <button class="sec" type="button" onclick="navigator.clipboard.writeText(document.getElementById('s-sfCallback').value).then(()=>{this.textContent='Másolva ✓';setTimeout(()=>this.textContent='Másolás',1500)})">Másolás</button>
+    </div>
+    <p class="muted" style="margin:.6rem 0 .4rem"><b>2. lépés — a Connected App adatai:</b></p>
     <label class="f">Consumer Key (Connected App) <input type="text" id="s-sfClientId" placeholder="Consumer Key"></label>
     <label class="f">Consumer Secret <input type="password" id="s-sfClientSecret" placeholder="(változatlan, ha üresen hagyod)"></label>
-    <label class="f">Login URL <input type="text" id="s-sfLoginUrl" placeholder="https://login.salesforce.com (sandbox: https://test.salesforce.com)"></label>
+    <label class="f">Salesforce Login URL <span class="muted">— a Salesforce bejelentkezési domainje, <u>nem</u> a callback</span>
+      <input type="text" id="s-sfLoginUrl" placeholder="https://login.salesforce.com (sandbox: https://test.salesforce.com, My Domain: https://ceg.my.salesforce.com)"></label>
     <label class="f">OAuth scope-ok <input type="text" id="s-sfScopes" placeholder="api refresh_token"></label>
     <label class="f">REST API verzió <input type="text" id="s-sfApiVersion" placeholder="v62.0"></label>
-    <div class="pill">Connected App <b>Callback URL</b>: <code id="s-sfCallback">–</code></div>
     <div class="pill">Összekötött felhasználók: <b id="s-sfUsers">0</b></div>
     <div class="pill" id="s-sfState">–</div>
     <div style="margin-top:.6rem"><button class="sec" onclick="testSalesforce()">Salesforce kapcsolat tesztelése</button> <span id="s-sfmsg" class="msg"></span></div>
@@ -226,7 +232,7 @@ async function loadSettings(){
   document.getElementById('s-sfLoginUrl').value = sf.loginUrl || '';
   document.getElementById('s-sfScopes').value = sf.scopes || '';
   document.getElementById('s-sfApiVersion').value = sf.apiVersion || '';
-  document.getElementById('s-sfCallback').textContent = sf.callbackUrl || '–';
+  document.getElementById('s-sfCallback').value = sf.callbackUrl || '–';
   document.getElementById('s-sfUsers').textContent = sf.connectedUsers || 0;
   document.getElementById('s-sfState').textContent = sf.configured ? 'Salesforce toolset aktív ✓' : 'Salesforce integráció kikapcsolva';
   const box = document.getElementById('s-toolsets');

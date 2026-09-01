@@ -510,8 +510,34 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     if (typeof b.salesforceClientId === "string") patch.salesforceClientId = b.salesforceClientId.trim();
     if (typeof b.salesforceClientSecret === "string") patch.salesforceClientSecret = b.salesforceClientSecret.trim();
     if (typeof b.salesforceLoginUrl === "string") {
-      const u = b.salesforceLoginUrl.trim().replace(/\/+$/, "");
-      if (!u || /^https:\/\/[a-z0-9.-]+$/i.test(u)) patch.salesforceLoginUrl = u;
+      const raw = b.salesforceLoginUrl.trim();
+      if (!raw) patch.salesforceLoginUrl = "";
+      else {
+        let parsed: URL | null = null;
+        try {
+          parsed = new URL(raw);
+        } catch {
+          /* invalid */
+        }
+        if (parsed && /\/auth\/salesforce\/callback\/?$/.test(parsed.pathname)) {
+          res.status(400).json({
+            error:
+              "A Callback URL-t nem ide kell írni: az a gateway saját címe, amit a Salesforce Connected App \"Callback URL\" mezőjébe kell bemásolni (" +
+              sfAuth.callbackUrl() +
+              "). A Login URL a Salesforce bejelentkezési domainje: https://login.salesforce.com, sandboxnál https://test.salesforce.com, vagy a My Domain (https://<ceg>.my.salesforce.com).",
+          });
+          return;
+        }
+        if (!parsed || parsed.protocol !== "https:" || !/salesforce\.com$|\.force\.com$|^127\.0\.0\.1$|^localhost$/i.test(parsed.hostname)) {
+          res.status(400).json({
+            error:
+              "Érvénytelen Salesforce Login URL: \"" + raw + "\". https://login.salesforce.com, https://test.salesforce.com vagy a My Domain címe (https://<ceg>.my.salesforce.com) adható meg.",
+          });
+          return;
+        }
+        // Only the origin matters (any path pasted from the browser is dropped).
+        patch.salesforceLoginUrl = parsed.origin;
+      }
     }
     if (typeof b.salesforceScopes === "string") patch.salesforceScopes = b.salesforceScopes.trim();
     if (typeof b.salesforceApiVersion === "string" && /^(v\d+\.\d+)?$/.test(b.salesforceApiVersion.trim())) {
