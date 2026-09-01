@@ -80,9 +80,30 @@ function maxItemsOf(args: Record<string, any>, ctx: ToolContext): number {
   return Math.min(Number(args.maxItems) || ctx.config.defaultPageItems, ctx.config.maxPageItems);
 }
 
-async function fieldsFor(client: SalesforceClient, object: string, requested?: string): Promise<string> {
+/**
+ * Keep only the fields the connected user can actually see (field-level
+ * security hides even "standard" fields such as Account.AnnualRevenue in some
+ * orgs). Relationship fields (Owner.Name) are kept when the relationship exists.
+ */
+async function visibleFields(client: SalesforceClient, object: string, wanted: string): Promise<string> {
+  const d = await client.describe(object);
+  const names = new Set<string>((d.fields ?? []).map((f: any) => String(f.name).toLowerCase()));
+  const rels = new Set<string>((d.fields ?? []).filter((f: any) => f.relationshipName).map((f: any) => String(f.relationshipName).toLowerCase()));
+  const kept = wanted
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .filter((f) => {
+      const dot = f.indexOf(".");
+      return dot > 0 ? rels.has(f.slice(0, dot).toLowerCase()) : names.has(f.toLowerCase());
+    });
+  if (!kept.some((f) => f.toLowerCase() === "id")) kept.unshift("Id");
+  return kept.join(", ");
+}
+
+async function fieldsFor(client: SalesforceClient, object: string, requested?: string, extra?: string): Promise<string> {
   if (requested) return assertFieldList(requested);
-  if (DEFAULT_FIELDS[object]) return DEFAULT_FIELDS[object];
+  if (DEFAULT_FIELDS[object]) return visibleFields(client, object, DEFAULT_FIELDS[object] + (extra ? ", " + extra : ""));
   const d = await client.describe(object);
   const names: string[] = [];
   for (const f of d.fields ?? []) {
@@ -198,9 +219,20 @@ export const salesforceEndpoints: EndpointDef[] = [
       let data: any;
       // Orgs may not expose every default object (e.g. no Opportunity): drop
       // objects Salesforce reports as unsupported and retry instead of failing.
+      // Resolve the RETURNING field lists against what the user can see; objects
+      // that cannot be described are skipped up front.
+      const returningFields = new Map<string, string>();
+      for (const o of objects) {
+        try {
+          returningFields.set(o, await visibleFields(client, o, SOSL_RETURNING[o] ?? "Id, Name"));
+        } catch {
+          skipped.push(o);
+        }
+      }
+      objects = objects.filter((o) => returningFields.has(o));
       for (let attempt = 0; attempt < 6; attempt++) {
         if (!objects.length) throw new Error(`None of the requested objects is searchable in this org (${skipped.join(", ")}).`);
-        const returning = objects.map((o) => `${o}(${SOSL_RETURNING[o] ?? "Id, Name"} LIMIT ${limit})`).join(", ");
+        const returning = objects.map((o) => `${o}(${returningFields.get(o)} LIMIT ${limit})`).join(", ");
         sosl = `FIND {${escapeSosl(String(args.term))}} IN ALL FIELDS RETURNING ${returning}`;
         try {
           data = await client.request("GET", client.data("/search"), { query: { q: sosl } });
@@ -424,22 +456,26 @@ export const salesforceEndpoints: EndpointDef[] = [
       }
       if (!isSfId(accountId)) throw new Error("accountId must be a 15/18 character Salesforce id.");
       const idLit = soqlString(accountId);
-      const section = async (soql: string, maxItems: number) => {
+      // Each section resolves its own visible fields and isolates its errors
+      // (an org may lack Opportunity, or hide fields from this user).
+      const section = async (object: string, tail: string, maxItems: number) => {
         try {
-          const r = await client.query(soql, { maxItems });
+          const fields = await fieldsFor(client, object);
+          const r = await client.query(`SELECT ${fields} FROM ${object} WHERE AccountId = ${idLit} ${tail}`, { maxItems });
           return { count: r.count, totalSize: r.totalSize, items: r.records };
         } catch (err) {
           return { error: err instanceof Error ? err.message : String(err) };
         }
       };
-      const account = await client.query(`SELECT ${DEFAULT_FIELDS.Account}, Description, AnnualRevenue, NumberOfEmployees, BillingStreet, BillingPostalCode FROM Account WHERE Id = ${idLit}`, { maxItems: 1 });
+      const accountFields = await fieldsFor(client, "Account", undefined, "Description, AnnualRevenue, NumberOfEmployees, BillingStreet, BillingPostalCode");
+      const account = await client.query(`SELECT ${accountFields} FROM Account WHERE Id = ${idLit}`, { maxItems: 1 });
       if (!account.records.length) throw new Error(`Account ${accountId} is not visible to the connected Salesforce user.`);
       const [contacts, opportunities, cases, tasks, events] = await Promise.all([
-        section(`SELECT ${DEFAULT_FIELDS.Contact} FROM Contact WHERE AccountId = ${idLit} ORDER BY LastModifiedDate DESC`, 50),
-        section(`SELECT ${DEFAULT_FIELDS.Opportunity} FROM Opportunity WHERE AccountId = ${idLit} ORDER BY CloseDate DESC`, 100),
-        section(`SELECT ${DEFAULT_FIELDS.Case} FROM Case WHERE AccountId = ${idLit} ORDER BY CreatedDate DESC`, 30),
-        section(`SELECT ${DEFAULT_FIELDS.Task} FROM Task WHERE AccountId = ${idLit} ORDER BY ActivityDate DESC NULLS LAST`, 25),
-        section(`SELECT ${DEFAULT_FIELDS.Event} FROM Event WHERE AccountId = ${idLit} ORDER BY StartDateTime DESC`, 25),
+        section("Contact", "ORDER BY LastModifiedDate DESC", 50),
+        section("Opportunity", "ORDER BY CloseDate DESC", 100),
+        section("Case", "ORDER BY CreatedDate DESC", 30),
+        section("Task", "ORDER BY ActivityDate DESC NULLS LAST", 25),
+        section("Event", "ORDER BY StartDateTime DESC", 25),
       ]);
       const opps = (opportunities as any).items ?? [];
       const sum = (rows: any[]) => rows.reduce((a, o) => a + (Number(o.Amount) || 0), 0);

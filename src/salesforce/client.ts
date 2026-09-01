@@ -106,9 +106,11 @@ export function isSfId(s: string): boolean {
   return SF_ID_RE.test(s);
 }
 
-export class SalesforceClient {
-  private describeCache = new Map<string, any>();
+/** Describe results per (user, org, object); describe reflects the user's field-level security. */
+const DESCRIBE_TTL_MS = 10 * 60 * 1000;
+const describeCache = new Map<string, { at: number; data: any }>();
 
+export class SalesforceClient {
   constructor(
     private conn: SfConnection,
     private refresh: (conn: SfConnection) => Promise<SfConnection>,
@@ -247,10 +249,20 @@ export class SalesforceClient {
   }
 
   async describe(object: string): Promise<any> {
-    const cached = this.describeCache.get(object);
-    if (cached) return cached;
-    const d = await this.request("GET", this.data(`/sobjects/${encodeURIComponent(object)}/describe`));
-    this.describeCache.set(object, d);
+    const key = `${this.conn.userId}@${this.conn.instanceUrl}/${object.toLowerCase()}`;
+    const cached = describeCache.get(key);
+    if (cached && Date.now() - cached.at < DESCRIBE_TTL_MS) return cached.data;
+    let d: any;
+    try {
+      d = await this.request("GET", this.data(`/sobjects/${encodeURIComponent(object)}/describe`));
+    } catch (err) {
+      if (err instanceof SalesforceError && err.status === 404) {
+        throw new SalesforceError(404, "NOT_FOUND", `Object '${object}' does not exist or is not visible to the connected Salesforce user in this org. Use list-salesforce-objects to see the available objects (custom objects end with __c).`);
+      }
+      throw err;
+    }
+    if (describeCache.size > 500) describeCache.clear();
+    describeCache.set(key, { at: Date.now(), data: d });
     return d;
   }
 }
