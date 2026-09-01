@@ -21,6 +21,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     commit: "26c9d43+",
     title: "Salesforce-összekötés (opcionális), adminok és felhasználók",
     items: [
+      "Salesforce riportfuttatás: az összesítő (summary/matrix) riportok részletsorai is visszajönnek csoportonként; az alapmezők a felhasználó által ténylegesen látható mezőkre szűrve (mezőszintű biztonság), a nem létező objektumok érthető hibával.",
       "Salesforce-lekérdezések: a válasz pontosan legfeljebb maxItems rekordot ad (eddig a Salesforce 2000-es kötege jött vissza), a nextCursor onnan folytat, ahol abbamaradt. A SOSL-keresés kihagyja az orgban nem elérhető objektumokat (pl. nincs Opportunity) hiba helyett. A Salesforce kapcsolatteszt a valós Salesforce-válaszokhoz igazítva (PKCE-s próba, hibaszöveg kiolvasása).",
       "Admin Salesforce-beállítás: a gateway Callback URL-je másolható, csak olvasható mezőben jelenik meg (ezt a Salesforce Connected Appba kell bemásolni), a Login URL mező pedig érthető hibaüzenetet ad, ha nem Salesforce-domaint (pl. a callback címet) adnak meg.",
       "Admin felület Microsoft-belépéssel: aki a kezdőoldalon bejelentkezett és admin, annak nem kell admin kulcs. Új \"Felhasználók\" fül: minden, a portálon vagy MCP-n keresztül már belépett felhasználó látszik (utolsó aktivitás, MCP-hívások, Salesforce-kapcsolat), innen adható vagy vonható vissza az admin jog, és bontható egy felhasználó Salesforce-kapcsolata. Az admin kulcs csak az első admin létrehozásához (bootstrap) és tartaléknak marad.",

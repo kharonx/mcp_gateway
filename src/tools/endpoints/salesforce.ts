@@ -555,11 +555,28 @@ export const salesforceEndpoints: EndpointDef[] = [
         value: g.value,
         aggregates: aggOf(`${g.key}!T`),
         rowCount: fm[`${g.key}!T`]?.rows?.length ?? 0,
+        ...(g.groupings?.length ? { subGroupings: g.groupings.map((s: any) => ({ label: s.label, aggregates: aggOf(`${s.key}!T`), rowCount: fm[`${s.key}!T`]?.rows?.length ?? 0 })) } : {}),
       }));
+      // Tabular reports keep detail rows under T!T; summary/matrix reports keep
+      // them under the (leaf) grouping keys - flatten those with a `group` column.
+      let rows = rowsOf("T!T");
+      if (!rows.length && data.groupingsDown?.groupings?.length) {
+        rows = [];
+        const walk = (g: any, path: string[]) => {
+          if (rows.length >= maxRows) return;
+          const label = [...path, g.label];
+          if (g.groupings?.length) g.groupings.forEach((s: any) => walk(s, label));
+          else for (const r of rowsOf(`${g.key}!T`)) {
+            if (rows.length >= maxRows) break;
+            rows.push({ group: label.join(" > "), ...r });
+          }
+        };
+        data.groupingsDown.groupings.forEach((g: any) => walk(g, []));
+      }
       return {
         report: { id: meta.id ?? id, name: meta.name, format: meta.reportFormat, allData: data.allData, hasDetailRows: data.hasDetailRows },
         columns: labels,
-        rows: rowsOf("T!T"),
+        rows,
         totals: aggOf("T!T"),
         groupings,
         _source: { sourceType: "salesforceReport", sourceId: meta.id ?? id, title: meta.name, sourceUrl: `${client.instanceUrl}/lightning/r/Report/${id}/view` },
