@@ -279,6 +279,31 @@ function renderPortalBody(s: PortalState): string {
   megjelenik az <a href="/admin">admin Napló</a> fülén is.</p>
 </div>
 
+<div class="card">
+  <h2>⚙️ Ha valamelyik szolgáltatás nem érhető el</h2>
+  <p>Előfordulhat, hogy az AI a kapcsolat egy részét látja, egy másikat viszont nem — például
+  az M365-ös lekérdezések (Outlook, naptár, fájlok) működnek, a Salesforce-adatok viszont nem
+  jönnek. Ilyenkor jellemzően nem a gateway a hibás, hanem a kliensben (ChatGPT vagy Claude)
+  tárolt kapcsolat avult el — például mert az adott szolgáltatás még nem szerepelt benne,
+  amikor bejelentkeztél.</p>
+  <p><b>A megoldás: kapcsold újra az MCP-t a kliensben.</b></p>
+  <ol>
+    <li><b>ChatGPT:</b> Beállítások → Bővítmények → a kapcsolatnál bontsd a kapcsolatot
+    (<b>Disconnect</b>), majd csatlakozz újra (<b>Connect</b>) — vagy töröld a bővítményt és vedd
+    fel újra a fenti URL-lel.</li>
+    <li><b>Claude (claude.ai / Desktop):</b> Settings → Connectors → a connectornál <b>Disconnect</b>,
+    majd újra <b>Connect</b>.</li>
+    <li><b>Claude Code:</b> add ki a <code>/mcp</code> parancsot → válaszd ki a szervert →
+    <b>Clear authentication</b>, majd <b>Authenticate</b>.</li>
+  </ol>
+  <p>Ha közben a kliens rákérdez a hitelesítés módjára, <b>mindig az OAuth lehetőséget válaszd</b>
+  (ne API-kulcsot vagy tokent) — a gateway kizárólag a vállalati Microsoft (Entra ID)
+  OAuth-bejelentkezést használja.</p>
+  <p class="muted">Ha az újracsatlakozás után is hiányzik valami: ellenőrizd fent, hogy be vagy-e
+  jelentkezve, hogy a Microsoft Graph elérés zöld pipát mutat-e, illetve — ha a Salesforce-t is
+  használod — hogy a Salesforce-fiókod össze van-e kötve. Ha mindez rendben van, és mégsem működik, szólj az IT-nek.</p>
+</div>
+
 <footer class="muted">
   <a href="/ujdonsagok">Újdonságok</a> · <a href="/admin">Admin felület</a> · <a href="/healthz">Állapot</a> · m365-reporting-mcp v1.0
   <div style="margin-top:.5rem">By Botha Levente @alphavet 2026</div>
