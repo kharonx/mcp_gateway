@@ -199,14 +199,15 @@ export class SalesforceAuth {
     if (!sf.clientId || !sf.clientSecret) {
       return { ok: false, checks: [{ name: "config", ok: false, message: "Consumer Key és Consumer Secret megadása szükséges." }] };
     }
-    // 1. credentials
+    // 1. credentials: refresh_token grant with a bogus token. Salesforce checks
+    //    the client first: invalid_client_id = wrong key, invalid_client = wrong
+    //    secret; anything else (invalid_grant, unknown_error) means the client was accepted.
     try {
       const body = new URLSearchParams({
-        grant_type: "authorization_code",
-        code: "gateway-connection-test",
+        grant_type: "refresh_token",
+        refresh_token: "gateway-connection-test",
         client_id: sf.clientId,
         client_secret: sf.clientSecret,
-        redirect_uri: this.callbackUrl(),
       });
       const res = await fetch(`${sf.loginUrl}/services/oauth2/token`, {
         method: "POST",
@@ -216,14 +217,14 @@ export class SalesforceAuth {
       const data = (await res.json().catch(() => ({}))) as Record<string, string>;
       const err = String(data.error ?? "");
       const desc = String(data.error_description ?? "");
-      if (err === "invalid_grant") {
-        checks.push({ name: "credentials", ok: true, message: `Consumer Key és Secret érvényes (${sf.loginUrl} elfogadta a klienst).` });
-      } else if (err === "invalid_client_id") {
+      if (err === "invalid_client_id") {
         checks.push({ name: "credentials", ok: false, message: `Consumer Key hibás: ${desc}` });
       } else if (err === "invalid_client") {
         checks.push({ name: "credentials", ok: false, message: `Consumer Secret hibás: ${desc}` });
-      } else if (data.access_token) {
-        checks.push({ name: "credentials", ok: true, message: "Token endpoint elérhető, kliens elfogadva." });
+      } else if (err === "invalid_grant" || err === "unknown_error" || data.access_token) {
+        checks.push({ name: "credentials", ok: true, message: `Consumer Key és Secret érvényes (${sf.loginUrl} elfogadta a klienst, a próba-tokent elutasította: ${err || "ok"}).` });
+      } else if (res.status >= 500) {
+        checks.push({ name: "credentials", ok: null, message: `Token endpoint HTTP ${res.status}: ${desc || err || "átmeneti hiba"} - próbáld újra.` });
       } else {
         checks.push({ name: "credentials", ok: false, message: `${err || res.status}: ${desc || "váratlan válasz a token endpointtól"}` });
       }
@@ -231,27 +232,33 @@ export class SalesforceAuth {
       checks.push({ name: "credentials", ok: false, message: `Login URL nem érhető el (${sf.loginUrl}): ${e instanceof Error ? e.message : String(e)}` });
       return { ok: false, checks };
     }
-    // 2. callback URL registration
+    // 2. callback URL registration: authorize probe (with PKCE, so apps that
+    //    require PKCE do not fail for that reason). Salesforce answers a mismatch
+    //    with an error page / redirect containing error=redirect_uri_mismatch.
     try {
       const u = new URL(`${sf.loginUrl}/services/oauth2/authorize`);
       u.searchParams.set("response_type", "code");
       u.searchParams.set("client_id", sf.clientId);
       u.searchParams.set("redirect_uri", this.callbackUrl());
       u.searchParams.set("scope", sf.scopes);
-      const res = await fetch(u, { redirect: "manual" });
+      u.searchParams.set("code_challenge", b64url(crypto.createHash("sha256").update("gateway-connection-test-verifier").digest()));
+      u.searchParams.set("code_challenge_method", "S256");
+      const res = await fetch(u, { redirect: "manual", headers: { Accept: "text/html" } });
       const loc = res.headers.get("location") ?? "";
-      const text = res.status === 200 ? await res.text() : "";
-      const blob = decodeURIComponent(loc) + " " + text.slice(0, 20000);
-      if (/redirect_uri_mismatch/i.test(blob)) {
+      const text = await res.text().catch(() => "");
+      const blob = decodeURIComponent(loc) + " " + text.slice(0, 30000);
+      const errCode = /error=([a-z_]+)/i.exec(blob)?.[1]?.toLowerCase();
+      const errDesc = /error_description=([^&"'<\s]+)/i.exec(blob)?.[1];
+      if (errCode === "redirect_uri_mismatch" || /redirect_uri_mismatch/i.test(blob)) {
         checks.push({ name: "callback", ok: false, message: `A Callback URL nincs felvéve a Connected Appban: ${this.callbackUrl()}` });
-      } else if (/invalid_client_id/i.test(blob)) {
+      } else if (errCode === "invalid_client_id" || /invalid_client_id/i.test(blob)) {
         checks.push({ name: "callback", ok: false, message: "Consumer Key ismeretlen az authorize endpointon." });
-      } else if (/oauth_error_code|error=/i.test(blob)) {
-        checks.push({ name: "callback", ok: null, message: `Authorize endpoint hibát jelzett: ${loc || text.slice(0, 200)}` });
+      } else if (errCode) {
+        checks.push({ name: "callback", ok: null, message: `Authorize endpoint: ${errCode}${errDesc ? " - " + errDesc.replace(/\+/g, " ") : ""} (HTTP ${res.status}) - nem callback-hiba.` });
       } else if (res.status === 200 || (res.status >= 300 && res.status < 400)) {
         checks.push({ name: "callback", ok: true, message: `Callback URL elfogadva (${this.callbackUrl()}) - a Salesforce a bejelentkezési oldalt adja.` });
       } else {
-        checks.push({ name: "callback", ok: null, message: `Authorize endpoint HTTP ${res.status} - nem egyértelmű.` });
+        checks.push({ name: "callback", ok: null, message: `Authorize endpoint HTTP ${res.status} - nem egyértelmű (a felhasználói összekötés próbája a mérvadó).` });
       }
     } catch (e) {
       checks.push({ name: "callback", ok: null, message: `Authorize próba sikertelen: ${e instanceof Error ? e.message : String(e)}` });

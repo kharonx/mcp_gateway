@@ -70,7 +70,9 @@ function assertFieldList(fields: string): string {
 
 function cursorOf(args: Record<string, any>): string | undefined {
   const c = typeof args.cursor === "string" && args.cursor ? args.cursor : undefined;
-  if (c && !c.startsWith("/services/data/")) throw new Error("cursor must be a nextCursor value returned by a Salesforce tool of this server.");
+  if (c && !c.startsWith("/services/data/") && !/^offset:\d+$/.test(c)) {
+    throw new Error("cursor must be a nextCursor value returned by a Salesforce tool of this server.");
+  }
   return c;
 }
 
@@ -144,7 +146,7 @@ export const salesforceEndpoints: EndpointDef[] = [
   {
     name: "salesforce-soql-query",
     description:
-      "Run a read-only SOQL SELECT query (e.g. \"SELECT Id, Name, StageName, Amount FROM Opportunity WHERE IsClosed = false ORDER BY CloseDate\"). Relationship fields (Account.Name), subqueries, aggregate functions (COUNT(), SUM(Amount) ... GROUP BY) and date literals (LAST_N_DAYS:30, THIS_QUARTER) are supported. Large results are paged: pass nextCursor as cursor to continue. Use describe-salesforce-object to discover field names first.",
+      "Run a read-only SOQL SELECT query (e.g. \"SELECT Id, Name, Industry FROM Account WHERE Type = 'Customer' ORDER BY LastModifiedDate DESC\"). Relationship fields (Account.Name), subqueries, aggregate functions (COUNT(), SUM(Amount) ... GROUP BY) and date literals (LAST_N_DAYS:30, THIS_QUARTER) are supported. Returns at most maxItems records (totalSize tells the full size); pass nextCursor as cursor to continue exactly where it stopped. Not every org exposes every standard object (e.g. Opportunity may be unavailable) - use list-salesforce-objects / describe-salesforce-object to discover objects and field names first.",
     toolset: "salesforce",
     provider: "salesforce",
     scopes: SF_SCOPES,
@@ -189,17 +191,39 @@ export const salesforceEndpoints: EndpointDef[] = [
     },
     handler: async (args, ctx) => {
       const client = requireSf(ctx);
-      const objects: string[] = (args.objects?.length ? args.objects : Object.keys(SOSL_RETURNING)).map(assertObjectName);
+      let objects: string[] = (args.objects?.length ? args.objects : Object.keys(SOSL_RETURNING)).map(assertObjectName);
       const limit = Number(args.limitPerObject) || 20;
-      const returning = objects.map((o) => `${o}(${SOSL_RETURNING[o] ?? "Id, Name"} LIMIT ${limit})`).join(", ");
-      const sosl = `FIND {${escapeSosl(String(args.term))}} IN ALL FIELDS RETURNING ${returning}`;
-      const data = await client.request("GET", client.data("/search"), { query: { q: sosl } });
+      const skipped: string[] = [];
+      let sosl = "";
+      let data: any;
+      // Orgs may not expose every default object (e.g. no Opportunity): drop
+      // objects Salesforce reports as unsupported and retry instead of failing.
+      for (let attempt = 0; attempt < 6; attempt++) {
+        if (!objects.length) throw new Error(`None of the requested objects is searchable in this org (${skipped.join(", ")}).`);
+        const returning = objects.map((o) => `${o}(${SOSL_RETURNING[o] ?? "Id, Name"} LIMIT ${limit})`).join(", ");
+        sosl = `FIND {${escapeSosl(String(args.term))}} IN ALL FIELDS RETURNING ${returning}`;
+        try {
+          data = await client.request("GET", client.data("/search"), { query: { q: sosl } });
+          break;
+        } catch (err) {
+          const bad = /sObject type '(\w+)' is not supported|No such (?:column|object) '(\w+)'/i.exec(err instanceof Error ? err.message : String(err));
+          const obj = bad?.[1] ?? bad?.[2];
+          if (!obj || !objects.includes(obj)) throw err;
+          objects = objects.filter((o) => o !== obj);
+          skipped.push(obj);
+        }
+      }
       const groups: Record<string, unknown[]> = {};
-      for (const rec of data.searchRecords ?? []) {
+      for (const rec of data?.searchRecords ?? []) {
         const t = rec.attributes?.type ?? "Unknown";
         (groups[t] ??= []).push(sfRecord(rec, client.instanceUrl));
       }
-      return { sosl, count: (data.searchRecords ?? []).length, byObject: groups };
+      return {
+        sosl,
+        count: (data?.searchRecords ?? []).length,
+        ...(skipped.length ? { note: `Objects not available in this org were skipped: ${skipped.join(", ")}.` } : {}),
+        byObject: groups,
+      };
     },
   },
   {
@@ -313,7 +337,7 @@ export const salesforceEndpoints: EndpointDef[] = [
   {
     name: "list-salesforce-records",
     description:
-      "List records of any Salesforce object without writing SOQL: object + optional fields, where clause (SOQL syntax, e.g. \"StageName = 'Closed Won' AND Amount > 10000\"), orderby and a time range on timeField (default LastModifiedDate; use CloseDate/CreatedDate as needed). Paged via nextCursor; pages hold at least 200 records.",
+      "List records of any Salesforce object without writing SOQL: object + optional fields, where clause (SOQL syntax, e.g. \"Type = 'Customer' AND BillingCountry = 'Hungary'\"), orderby and a time range on timeField (default LastModifiedDate; use CreatedDate or any date field as needed). Returns at most maxItems records; continue with cursor=nextCursor.",
     toolset: "salesforce",
     provider: "salesforce",
     scopes: SF_SCOPES,

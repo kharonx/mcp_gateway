@@ -56,6 +56,7 @@ export interface SfQueryResult {
 export interface SfRequestOptions {
   query?: Record<string, string | undefined>;
   body?: unknown;
+  headers?: Record<string, string>;
 }
 
 /** Strips Salesforce `attributes` wrappers and attaches a _source block. */
@@ -144,6 +145,7 @@ export class SalesforceClient {
           Authorization: `Bearer ${this.conn.accessToken}`,
           Accept: "application/json",
           ...(opts.body !== undefined ? { "Content-Type": "application/json" } : {}),
+          ...opts.headers,
         },
         body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
       });
@@ -174,34 +176,73 @@ export class SalesforceClient {
   }
 
   /**
-   * Run a SOQL query and follow nextRecordsUrl up to maxItems. A cursor is a
-   * previously returned nextRecordsUrl (relative /services/data/... path).
+   * Run a SOQL query and return EXACTLY up to maxItems records.
+   *
+   * Salesforce pages with a query locator: nextRecordsUrl is
+   * /services/data/vNN.N/query/<locator>-<offset>, and the offset can be set
+   * freely (verified live), so the cursor points at the first record not yet
+   * returned. Batch size is bounded with Sforce-Query-Options (200..2000).
+   * When a single batch already holds everything (no locator), an "offset:N"
+   * cursor re-runs the query with SOQL OFFSET.
    */
   async query(
     soql: string,
     opts: { maxItems: number; cursor?: string; includeDeleted?: boolean } = { maxItems: 200 }
   ): Promise<SfQueryResult> {
-    const records: Record<string, any>[] = [];
+    const maxItems = Math.max(1, opts.maxItems);
+    const headers = { "Sforce-Query-Options": `batchSize=${Math.min(2000, Math.max(200, maxItems))}` };
+    let records: Record<string, any>[] = [];
     let totalSize = 0;
+    let startOffset = 0;
+    let locatorBase: string | undefined;
+    let url: string | undefined;
+    let soqlOffset = 0;
+    if (opts.cursor?.startsWith("offset:")) {
+      soqlOffset = Number(opts.cursor.slice(7)) || 0;
+      startOffset = soqlOffset;
+    } else if (opts.cursor) {
+      const m = /^(.*\/query\/[A-Za-z0-9]+)-(\d+)$/.exec(opts.cursor);
+      if (m) {
+        locatorBase = m[1];
+        startOffset = Number(m[2]);
+      }
+      url = opts.cursor;
+    }
     let next: string | undefined;
-    let url: string | undefined = opts.cursor;
     let first = true;
-    while (first || (url && records.length < opts.maxItems)) {
-      const data: any = first && !url
-        ? await this.request("GET", this.data(opts.includeDeleted ? "/queryAll" : "/query"), { query: { q: soql } })
-        : await this.request("GET", url!);
+    while (first || (url && records.length < maxItems)) {
+      const data: any =
+        first && !url
+          ? await this.request("GET", this.data(opts.includeDeleted ? "/queryAll" : "/query"), {
+              query: { q: soqlOffset ? `${soql} OFFSET ${soqlOffset}` : soql },
+              headers,
+            })
+          : await this.request("GET", url!, { headers });
       first = false;
       records.push(...(data.records ?? []));
       totalSize = Number(data.totalSize ?? records.length);
       next = data.done === false && data.nextRecordsUrl ? String(data.nextRecordsUrl) : undefined;
+      if (next) {
+        const m = /^(.*\/query\/[A-Za-z0-9]+)-(\d+)$/.exec(next);
+        if (m) locatorBase = m[1];
+      }
       url = next;
+    }
+    let truncated = !!next;
+    let nextCursor = next;
+    if (records.length > maxItems) {
+      records = records.slice(0, maxItems);
+      truncated = true;
+      if (locatorBase) nextCursor = `${locatorBase}-${startOffset + maxItems}`;
+      else if (!/\bLIMIT\b/i.test(soql)) nextCursor = `offset:${startOffset + maxItems}`;
+      else nextCursor = undefined; // the query has its own LIMIT - nothing sensible to continue with
     }
     return {
       records: records.map((r) => sfRecord(r, this.conn.instanceUrl)),
       totalSize,
       count: records.length,
-      truncated: !!next,
-      nextCursor: next,
+      truncated,
+      nextCursor,
     };
   }
 
