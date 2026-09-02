@@ -18,7 +18,7 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-02",
-    commit: "78c6bed+",
+    commit: "5226a84+",
     title: "Salesforce: írás is, nem csak lekérdezés",
     items: [
       "Új, opcionális Salesforce írási toolset (salesforce-write): feladat (Task) és esemény (Event) rögzítése a kapcsolódó ügyfélre/lehetőségre, tetszőleges rekord létrehozása és mezőinek módosítása (pl. Case lezárása, Opportunity szakaszváltás), Chatter-bejegyzés a rekord feedjére, jegyzet csatolása. Eddig a Salesforce-elérés kizárólag lekérdezés volt — amit az MCP-oldal nem tudott, azt most a REST API adja.",
