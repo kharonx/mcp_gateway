@@ -137,6 +137,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     return {
       toolCount: enabled.length,
       writeToolCount: enabled.filter((d) => d.write).length,
+      salesforceWrite: enabled.some((d) => d.toolset === "salesforce-write"),
       ...buildCapabilities(enabled),
     };
   };

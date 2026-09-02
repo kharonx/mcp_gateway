@@ -2,12 +2,14 @@
 
 > Generated from `src/tools/endpoints/*.ts` by `npm run matrix`. Do not edit by hand.
 
-Principle: **read broadly, write narrowly** - the only WRITE surface is Outlook mail
-(draft/send/reply/forward), each send gated by `confirm=true`.
+Principle: **read broadly, write narrowly** - the WRITE surface is Outlook mail
+(draft/send/reply/forward), calendar events, Teams messages and - when the optional
+Salesforce Connected App is configured - Salesforce activity/record writes. Every
+outbound send and every Salesforce write is gated by `confirm=true`.
 
-Total tools: **114** (17 WRITE, 97 READ)
+Total tools: **120** (23 WRITE, 97 READ)
 
-Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (5), salesforce (11)
+Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (5), salesforce (11), salesforce-write (6)
 
 | MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -125,11 +127,17 @@ Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), cale
 | `get-salesforce-account-overview` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/query` | Salesforce: api | optional (Connected App configured) |  |
 | `list-salesforce-reports` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/query` | Salesforce: api | optional (Connected App configured) | paginated |
 | `run-salesforce-report` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/analytics/reports/{reportId}` | Salesforce: api | optional (Connected App configured) |  |
+| `create-salesforce-record` | salesforce-write | **WRITE** | POST | `Salesforce /services/data/vXX.X/sobjects/{object}` | Salesforce: api | optional (Connected App configured) | confirm-required |
+| `update-salesforce-record` | salesforce-write | **WRITE** | PATCH | `Salesforce /services/data/vXX.X/sobjects/{object}/{recordId}` | Salesforce: api | optional (Connected App configured) | confirm-required |
+| `create-salesforce-task` | salesforce-write | **WRITE** | POST | `Salesforce /services/data/vXX.X/sobjects/Task` | Salesforce: api | optional (Connected App configured) | confirm-required |
+| `create-salesforce-event` | salesforce-write | **WRITE** | POST | `Salesforce /services/data/vXX.X/sobjects/Event` | Salesforce: api | optional (Connected App configured) | confirm-required |
+| `post-salesforce-chatter` | salesforce-write | **WRITE** | POST | `Salesforce /services/data/vXX.X/sobjects/FeedItem` | Salesforce: api | optional (Connected App configured) | confirm-required |
+| `create-salesforce-note` | salesforce-write | **WRITE** | POST | `Salesforce /services/data/vXX.X/sobjects/ContentNote` | Salesforce: api | optional (Connected App configured) | confirm-required |
 
 ## Deliberately NOT exposed (safety layer, spec sections 19-20)
 
 - No generic `graph-request(method, url, body)` passthrough tool.
 - No `$batch` passthrough.
-- No Calendar/Teams/Files/Sites/OneNote/User/Group write, no delete anywhere.
+- No Files/Sites/OneNote/User/Group write, and no delete anywhere.
 - Mail delete / folder delete / destructive mailbox operations are excluded.
-- Salesforce (optional): read-only only - no record create/update/delete, no Apex/Bulk/Metadata API; every call uses the user's own linked Salesforce login.
+- Salesforce (optional): reads plus a narrow write surface (create/update record, task, event, Chatter post, note) - no delete, no Apex/Bulk/Metadata API; every call uses the user's own linked Salesforce login.

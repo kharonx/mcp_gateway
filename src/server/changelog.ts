@@ -17,6 +17,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-09-02",
+    commit: "78c6bed+",
+    title: "Salesforce: írás is, nem csak lekérdezés",
+    items: [
+      "Új, opcionális Salesforce írási toolset (salesforce-write): feladat (Task) és esemény (Event) rögzítése a kapcsolódó ügyfélre/lehetőségre, tetszőleges rekord létrehozása és mezőinek módosítása (pl. Case lezárása, Opportunity szakaszváltás), Chatter-bejegyzés a rekord feedjére, jegyzet csatolása. Eddig a Salesforce-elérés kizárólag lekérdezés volt — amit az MCP-oldal nem tudott, azt most a REST API adja.",
+      "Minden Salesforce-írás külön jóváhagyáshoz kötött (confirm=true): az AI-nak előbb meg kell kérdeznie téged, és a rekord a Salesforce-ban a saját nevedben jön létre, a saját jogosultságaiddal. Törlés továbbra sincs.",
+      "A mezőneveket és az írhatóságot a gateway a Salesforce leírásából (describe) ellenőrzi a hívás előtt: elgépelt, nem létező vagy csak olvasható mező esetén érthető hibaüzenet jön, nem nyers Salesforce-hiba.",
+      "Az írás külön ki-be kapcsolható toolset: az admin felület toolset-listájában letiltható, a globális csak-olvasás mód pedig automatikusan kizárja. A kezdőoldal és az admin felület szövegei is jelzik, ha az írás aktív.",
+      "Az audit naplóba az írásoknál bekerül a művelet és a létrejött Salesforce-rekord azonosítója is.",
+    ],
+  },
+  {
     date: "2026-08-31",
     commit: "26c9d43+",
     title: "Salesforce-összekötés (opcionális), adminok és felhasználók",

@@ -3,12 +3,13 @@
 Vállalati MCP szerver, amelyen keresztül ChatGPT, Claude és más MCP-kompatibilis AI-kliensek
 **kontrolláltan** férnek hozzá a Microsoft 365 információforrásaihoz (Outlook, Naptár, Teams,
 meeting-átiratok, OneNote, SharePoint, OneDrive, Loop, Search, Users) — és opcionálisan, külön
-felhasználói összekötéssel, egy Salesforce orghoz (csak olvasás, lásd lent).
+felhasználói összekötéssel, egy Salesforce orghoz (olvasás + szűk írás, lásd lent).
 
 **Alapelv: read broadly, write narrowly.** Széles READ réteg a bejelentkezett felhasználó
 tényleges M365 jogosultságain belül; a WRITE réteg szűk és explicit: Outlook levél
 (draft / send / reply / forward), naptáresemény (létrehozás / módosítás / meghívó
-megválaszolása) és Teams-üzenet (chat / csatorna / válasz) — minden tényleges
+megválaszolása), Teams-üzenet (chat / csatorna / válasz) és — ha a Salesforce-integráció
+be van kapcsolva — Salesforce feladat/esemény/rekord/Chatter/jegyzet írás. Minden tényleges
 küldés/létrehozás külön `confirm=true` kapuval.
 
 ## Architektúra
@@ -127,7 +128,8 @@ Claude Desktop / Claude Code: ugyanez az URL remote MCP-ként, vagy lokálisan s
 ## Salesforce-összekötés (opcionális)
 
 A gateway a Microsoft 365 mellett **fakultatívan** egy Salesforce orgot is elér — ugyanazzal az
-elvvel: *delegált, csak olvasás, sosem több, mint amit a felhasználó maga lát*.
+elvvel: *delegált, sosem több, mint amit a felhasználó maga lát* — és írásnál sosem több,
+mint amit ő maga meg is tehetne a Salesforce-ban.
 
 - **Bekapcsolás:** `/admin` → *Salesforce (opcionális)* → a Connected App **Consumer Key / Secret**
   és a login URL (`https://login.salesforce.com`, sandboxnál `https://test.salesforce.com`).
@@ -135,7 +137,8 @@ elvvel: *delegált, csak olvasás, sosem több, mint amit a felhasználó maga l
 - **Connected App követelmények:** OAuth engedélyezve; **Callback URL** =
   `https://<BASE_URL>/auth/salesforce/callback` (az admin felület mutatja); OAuth scope-ok:
   *Manage user data via APIs (api)* és *Perform requests at any time (refresh_token, offline_access)*.
-  PKCE támogatott (a gateway mindig küld code_challenge-et). Írási vagy admin scope nem kell.
+  PKCE támogatott (a gateway mindig küld code_challenge-et). Külön írási vagy admin scope nem kell:
+  az `api` scope fedi az írást is, a tényleges jogot a felhasználó Salesforce-profilja dönti el.
   Az admin felületen a *Salesforce kapcsolat tesztelése* gomb felhasználói belépés nélkül ellenőrzi a
   Consumer Key/Secret párost és a Callback URL regisztrációját, és — ha a te fiókod össze van kötve —
   a saját kapcsolatodat is.
@@ -147,14 +150,22 @@ elvvel: *delegált, csak olvasás, sosem több, mint amit a felhasználó maga l
 - **Toolok (READ):** `salesforce-connection-status`, `salesforce-soql-query`, `salesforce-sosl-search`,
   `list-salesforce-objects`, `describe-salesforce-object`, `get-salesforce-record`,
   `list-salesforce-records`, `get-salesforce-recent-items`, `get-salesforce-account-overview`,
-  `list-salesforce-reports`, `run-salesforce-report`. Nincs rekord create/update/delete, Apex, Bulk
-  vagy Metadata API. Az auditnaplóban a Salesforce-hívások `salesforce:` előtaggal jelennek meg.
+  `list-salesforce-reports`, `run-salesforce-report`.
+- **Toolok (WRITE, `salesforce-write` toolset):** `create-salesforce-task`, `create-salesforce-event`,
+  `create-salesforce-record`, `update-salesforce-record`, `post-salesforce-chatter`,
+  `create-salesforce-note`. Mindegyik `confirm=true`-hoz kötött, és a mezőket a hívás előtt a
+  `describe` alapján ellenőrzi (nem létező vagy nem írható mező érthető hibát ad, nem 400-at).
+  **Törlés nincs**, és nincs Apex, Bulk vagy Metadata API. A toolset a szokásos módon kikapcsolható
+  (`ENABLED_TOOLSETS`, admin felület), és a `READ_ONLY=true` mód is letiltja.
+  Az auditnaplóban a Salesforce-hívások `salesforce:` előtaggal jelennek meg; írásnál a létrejött
+  rekord azonosítója is bekerül a naplóba.
 
 ## Biztonsági réteg (spec 19–20)
 
 - **Nincs** generikus `graph_request(method, url, body)` tool és nincs `$batch` passthrough —
   csak a 86 allowlistelt endpoint érhető el.
-- **Nincs** Calendar/Teams/Files/Sites/OneNote/User/Group write és nincs delete sehol.
+- **Nincs** Files/Sites/OneNote/User/Group write és nincs delete sehol — a Salesforce-írás is
+  kizárólag létrehozás/módosítás.
 - Draft létrehozása ≠ küldési engedély: minden send/reply/forward `confirm=true`-t követel,
   és a tool-leírás utasítja az AI-t, hogy előbb kérjen explicit felhasználói jóváhagyást.
 - `READ_ONLY=true` env-vel az összes write tool lekapcsolható; `ENABLED_TOOLSETS`-szel

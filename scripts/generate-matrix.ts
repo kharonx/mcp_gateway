@@ -26,8 +26,10 @@ const md = `# Microsoft 365 Reporting MCP v1.0 - Tool / Permission Matrix
 
 > Generated from \`src/tools/endpoints/*.ts\` by \`npm run matrix\`. Do not edit by hand.
 
-Principle: **read broadly, write narrowly** - the only WRITE surface is Outlook mail
-(draft/send/reply/forward), each send gated by \`confirm=true\`.
+Principle: **read broadly, write narrowly** - the WRITE surface is Outlook mail
+(draft/send/reply/forward), calendar events, Teams messages and - when the optional
+Salesforce Connected App is configured - Salesforce activity/record writes. Every
+outbound send and every Salesforce write is gated by \`confirm=true\`.
 
 Total tools: **${allEndpoints.length}** (${allEndpoints.filter((d) => d.write).length} WRITE, ${allEndpoints.filter((d) => !d.write).length} READ)
 
@@ -41,9 +43,9 @@ ${rows.join("\n")}
 
 - No generic \`graph-request(method, url, body)\` passthrough tool.
 - No \`$batch\` passthrough.
-- No Calendar/Teams/Files/Sites/OneNote/User/Group write, no delete anywhere.
+- No Files/Sites/OneNote/User/Group write, and no delete anywhere.
 - Mail delete / folder delete / destructive mailbox operations are excluded.
-- Salesforce (optional): read-only only - no record create/update/delete, no Apex/Bulk/Metadata API; every call uses the user's own linked Salesforce login.
+- Salesforce (optional): reads plus a narrow write surface (create/update record, task, event, Chatter post, note) - no delete, no Apex/Bulk/Metadata API; every call uses the user's own linked Salesforce login.
 `;
 
 const out = path.resolve("docs/tool-matrix.md");

@@ -94,7 +94,9 @@ export const ADMIN_HTML = `<!doctype html>
   </fieldset>
   <fieldset>
     <legend>Salesforce (opcionális)</legend>
-    <p class="muted" style="margin-top:0">Ha kitöltöd, megjelenik a <code>salesforce</code> toolset (csak olvasás: SOQL/SOSL, rekordok, riportok).
+    <p class="muted" style="margin-top:0">Ha kitöltöd, megjelenik a <code>salesforce</code> (olvasás: SOQL/SOSL, rekordok, riportok)
+    és a <code>salesforce-write</code> toolset (írás: feladat, esemény, rekord, Chatter, jegyzet — törlés nincs, minden írás <code>confirm=true</code>-hoz kötött).
+    Az írás a fenti toolset-listában külön ki-be kapcsolható, a globális csak-olvasás mód pedig letiltja.
     Minden felhasználó a kezdőoldalon a <b>saját</b> Salesforce-fiókját köti össze — a gateway sosem lát többet, mint az adott felhasználó.
     Üresen hagyott Consumer Key = integráció kikapcsolva.</p>
     <div class="pill" style="display:block; max-width:640px">

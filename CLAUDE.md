@@ -9,7 +9,9 @@
 - `npm run build` then `npm run matrix` (regenerates `docs/tool-matrix.md`) before committing tool changes.
 - Salesforce is optional: tools with `provider: "salesforce"` are registered only when a Connected
   App is configured (admin UI / `SF_CLIENT_ID`); per-user OAuth (PKCE) keyed by Entra oid in
-  `data/salesforce-tokens.json`; read-only only. Never write Salesforce (or any) secrets into the repo.
+  `data/salesforce-tokens.json`. Reads live in `salesforce.ts` (toolset `salesforce`), writes in
+  `salesforceWrite.ts` (toolset `salesforce-write`, every tool `confirmRequired`, no delete).
+  Never write Salesforce (or any) secrets into the repo.
 - Graph quirks already handled (keep them): OneNote notebooks/sections return no `@odata.nextLink`
   (`skipPaging`), OneNote pages have no full-text search in v1.0, `parentNotebook` needs `$expand`,
   `sectionGroup` has no `links` property, large collections continue via `cursor`/`nextCursor`.

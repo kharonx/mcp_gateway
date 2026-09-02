@@ -8,6 +8,7 @@ import type { SfConnectionInfo } from "../salesforce/auth.js";
 /** Logical toolsets of the Reporting profile (spec section 24). */
 export type Toolset =
   | "salesforce"
+  | "salesforce-write"
   | "mail"
   | "mail-write"
   | "shared-mail"
@@ -24,7 +25,7 @@ export type Toolset =
   | "search"
   | "users";
 
-export const WRITE_TOOLSETS: Toolset[] = ["mail-write", "shared-mail-write", "calendar-write", "teams-write"];
+export const WRITE_TOOLSETS: Toolset[] = ["mail-write", "shared-mail-write", "calendar-write", "teams-write", "salesforce-write"];
 
 export interface QueryCapabilities {
   filter?: boolean;

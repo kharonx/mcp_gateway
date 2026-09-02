@@ -13,6 +13,8 @@ export interface PortalState {
   graphOk?: boolean;
   graphError?: string;
   loginError?: string;
+  /** True when the optional Salesforce WRITE toolset is enabled (changes what we promise on this page). */
+  salesforceWrite?: boolean;
   /** Present only when the optional Salesforce Connected App is configured. */
   salesforce?: {
     connected: boolean;
@@ -51,10 +53,10 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): {
   if (on.has("users")) lines.push("Microsoft 365 felhasználók és személyek");
   if (on.has("search")) lines.push("Több forrást átfogó Microsoft 365-keresés");
   if (on.has("salesforce"))
-    lines.push("Salesforce (opcionális, külön összekötéssel): fiókok, kapcsolatok, lehetőségek, ügyek, SOQL/SOSL-lekérdezés, riportok — csak olvasás");
+    lines.push("Salesforce (opcionális, külön összekötéssel): fiókok, kapcsolatok, lehetőségek, ügyek, SOQL/SOSL-lekérdezés, riportok — lekérdezés");
 
   // Future-proofing: any toolset without a curated line above still shows up.
-  const covered: Toolset[] = ["mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce"];
+  const covered: Toolset[] = ["mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write"];
   for (const t of on) {
     if (!covered.includes(t)) {
       const count = enabledDefs.filter((d) => d.toolset === t && !d.write).length;
@@ -74,6 +76,11 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): {
   }
   if (on.has("teams-write")) {
     writeLines.push("Teams-üzenet küldése chatbe vagy csatornába, illetve válasz csatornaüzenetre");
+  }
+  if (on.has("salesforce-write")) {
+    writeLines.push(
+      "Salesforce (ha összekötötted): feladat és esemény rögzítése, rekord létrehozása és mezőinek módosítása, Chatter-bejegyzés, jegyzet csatolása — törlés nincs"
+    );
   }
   for (const t of on) {
     if (!covered.includes(t)) {
@@ -136,11 +143,18 @@ export function renderPortal(s: PortalState): string {
         ? `<p class="ok">✓ Összekötve: <b>${esc(sf.info.name ?? sf.info.username ?? "Salesforce-felhasználó")}</b>
            ${sf.info.username ? `<span class="muted">(${esc(sf.info.username)})</span>` : ""}<br>
            <span class="muted">Org: ${esc(sf.info.instanceUrl)} · összekötve: ${esc(sf.info.connectedAt.slice(0, 16).replace("T", " "))} UTC</span></p>
-           <p>Az AI a Salesforce-ban is <b>a te jogosultságaiddal</b>, csak olvasva dolgozik (SOQL/SOSL, rekordok, riportok).</p>
+           <p>Az AI a Salesforce-ban is <b>a te jogosultságaiddal</b> dolgozik (SOQL/SOSL, rekordok, riportok).
+           ${s.salesforceWrite
+             ? `<br><b>Írás is engedélyezve:</b> feladat/esemény rögzítése, rekord létrehozása és módosítása, Chatter, jegyzet — mindegyikhez az AI-nak
+                külön a te jóváhagyásodat kell kérnie, és a Salesforce-ban a <b>te neveden</b> jelenik meg. Törlés nincs.`
+             : "<br>Csak olvasás — rekord létrehozása vagy módosítása nem lehetséges."}</p>
            <p><a class="btn sec" href="/auth/salesforce/disconnect">Salesforce-kapcsolat bontása</a></p>`
-        : `<p>Kösd össze a <b>saját</b> Salesforce-fiókodat, hogy az AI a Salesforce-adataidat is elérje — kizárólag olvasva,
-           és csak azt, amit te is látsz a Salesforce-ban. A bejelentkezés a Salesforce oldalán történik (${esc(sf.loginUrl)}),
+        : `<p>Kösd össze a <b>saját</b> Salesforce-fiókodat, hogy az AI a Salesforce-adataidat is elérje — csak azt,
+           amit te is látsz a Salesforce-ban. A bejelentkezés a Salesforce oldalán történik (${esc(sf.loginUrl)}),
            a gateway a jelszavadat nem látja.</p>
+           <p class="muted">${s.salesforceWrite
+             ? "Olvasás mellett <b>írás is engedélyezve</b> ezen a gatewayen (feladat, esemény, rekord, Chatter, jegyzet) — minden íráshoz az AI-nak külön a te jóváhagyásodat kell kérnie, és a Salesforce-ban a te neveden jelenik meg. Törlés nincs."
+             : "Az elérés kizárólag olvasás — az AI nem hoz létre és nem módosít Salesforce-rekordot."}</p>
            <p><a class="btn" href="/auth/salesforce/connect">☁️ Salesforce összekötése</a></p>`
   }
 </div>`
@@ -170,7 +184,7 @@ ${PORTAL_STYLE}
 <body>
 ${renderNav("/")}
 <h1>Microsoft 365 Reporting MCP Gateway</h1>
-<div class="muted">Read broadly, write narrowly · ${s.toolCount} tool (${s.writeToolCount} írási — csak Outlook levélküldés)</div>
+<div class="muted">Read broadly, write narrowly · ${s.toolCount} tool (${s.writeToolCount} írási, mind külön jóváhagyáshoz kötve)</div>
 
 ${identityCard}
 ${salesforceCard}

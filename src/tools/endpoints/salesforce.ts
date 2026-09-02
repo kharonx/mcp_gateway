@@ -4,10 +4,11 @@ import { resolveTimeRange } from "../../graph/timeRange.js";
 import { escapeSosl, isSfId, sfRecord, soqlString, type SalesforceClient } from "../../salesforce/client.js";
 
 /**
- * Optional Salesforce toolset (READ-ONLY). Registered only when a Connected
- * App is configured; each call runs through the calling M365 user's own
- * Salesforce connection (linked on the landing page), so the AI sees exactly
- * what that Salesforce user may see - never more.
+ * Optional Salesforce READ toolset. Registered only when a Connected App is
+ * configured; each call runs through the calling M365 user's own Salesforce
+ * connection (linked on the landing page), so the AI sees exactly what that
+ * Salesforce user may see - never more. The matching write surface lives in
+ * salesforceWrite.ts (toolset "salesforce-write").
  */
 
 const SF_SCOPES = ["Salesforce: api"];
@@ -39,7 +40,7 @@ const SIMPLE_TYPES = new Set([
   "boolean", "date", "datetime", "reference", "textarea",
 ]);
 
-function requireSf(ctx: ToolContext): SalesforceClient {
+export function requireSf(ctx: ToolContext): SalesforceClient {
   if (!ctx.salesforce) {
     throw new Error("Salesforce integration is not available in this mode (HTTP mode with a configured Connected App is required).");
   }
@@ -58,7 +59,7 @@ function assertSelect(soql: string): string {
   return q;
 }
 
-function assertObjectName(name: string): string {
+export function assertObjectName(name: string): string {
   if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) throw new Error(`Invalid Salesforce object name: ${name}`);
   return name;
 }
