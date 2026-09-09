@@ -18,7 +18,7 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-09",
-    commit: "HEADHASH",
+    commit: "8933524",
     title: "Új név: AV MCP Gateway",
     items: [
       "A szolgáltatás neve mostantól AV MCP Gateway (korábban Microsoft 365 Reporting MCP Gateway), mert már nem csak a Microsoft 365-öt, hanem a Salesforce-ot is kiszolgálja, és további rendszerek bekötése is tervben van.",
