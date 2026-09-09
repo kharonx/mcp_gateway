@@ -18,6 +18,17 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-09",
+    commit: "HEADHASH",
+    title: "Kezdőoldal: platformonként mit ér el az AI",
+    items: [
+      "A kezdőoldal „Mihez fér hozzá az AI” blokkja platformonként bontva mutatja a bekötött rendszereket. Jelenleg két platform van: Microsoft 365 (Outlook, naptár, Teams, meetingek, OneDrive, SharePoint, OneNote, Loop, címtár, keresés) és Salesforce (standard és egyedi objektumok, SOQL/SOSL, ügyfél-áttekintés, riportok).",
+      "Minden platformnál külön látszik a hozzáférés módja (a Microsoft-fiókoddal, illetve a saját Salesforce-fiókod összekötésével), az olvasási kör és az írási kör — az írás mindenhol csak a te külön jóváhagyásoddal fut, és a Salesforce-ban a te neveden jelenik meg.",
+      "A leírás a ténylegesen engedélyezett toolkészletekből áll össze: ha az admin felületen egy toolkészletet kikapcsolsz, vagy a gateway csak-olvasó módban fut, a kezdőoldal ezt azonnal tükrözi.",
+      "Következő tervezett platformcsalád: online hirdetési rendszerek (Meta Ads, Google Ads, TikTok Ads, LinkedIn Ads, Microsoft Advertising) — a technikai felmérés elkészült, a fejlesztés még nem indult el.",
+    ],
+  },
+  {
+    date: "2026-09-09",
     commit: "8933524",
     title: "Új név: AV MCP Gateway",
     items: [
