@@ -251,7 +251,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
   app.get("/healthz", (_req, res) => {
     res.json({
       status: "ok",
-      name: "m365-reporting-mcp",
+      name: "av-mcp-gateway",
       version: "1.0.0",
       configured: isEntraConfigured(cfg),
       salesforce: isSalesforceConfigured(cfg),
@@ -613,7 +613,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
   });
 
   app.listen(cfg.port, () => {
-    console.log(`m365-reporting-mcp listening on ${cfg.baseUrl}`);
+    console.log(`av-mcp-gateway listening on ${cfg.baseUrl}`);
     console.log(`  MCP endpoint : POST ${cfg.baseUrl}/mcp (bearer token required)`);
     console.log(`  OAuth proxy  : ${cfg.baseUrl}/.well-known/oauth-authorization-server (DCR-capable clients: ChatGPT, Claude)`);
     console.log(`  Admin UI     : ${cfg.baseUrl}/admin`);

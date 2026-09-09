@@ -1,4 +1,4 @@
-# m365-reporting-mcp – working rules
+# AV MCP Gateway – working rules
 
 - **Every deploy gets an "Újdonságok" entry.** Before redeploying, add a new entry at the top of
   `CHANGELOG` in `src/server/changelog.ts` (date, short hash of the deployed HEAD, Hungarian,

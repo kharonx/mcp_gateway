@@ -1,4 +1,4 @@
-# Microsoft 365 Reporting MCP v1.0 - Tool / Permission Matrix
+# AV MCP Gateway v1.0 - Tool / Permission Matrix
 
 > Generated from `src/tools/endpoints/*.ts` by `npm run matrix`. Do not edit by hand.
 

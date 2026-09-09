@@ -1,11 +1,11 @@
 {
-  "name": "m365-reporting-mcp",
+  "name": "av-mcp-gateway",
   "version": "1.0.0",
-  "description": "Microsoft 365 Reporting MCP server - read broadly, write narrowly (Outlook mail send only)",
+  "description": "AV MCP Gateway - Microsoft 365 (Graph) and Salesforce for AI clients; read broadly, write narrowly",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "m365-reporting-mcp": "dist/index.js"
+    "av-mcp-gateway": "dist/index.js"
   },
   "engines": {
     "node": ">=20"

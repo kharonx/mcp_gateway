@@ -1,5 +1,5 @@
 /**
- * Delegated Microsoft Graph scopes of the Reporting MCP profile.
+ * Delegated Microsoft Graph scopes of the AV MCP Gateway profile.
  * Principle: read broadly, write narrowly (Outlook mail only).
  */
 export const READ_SCOPES = [

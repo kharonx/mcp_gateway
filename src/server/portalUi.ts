@@ -178,12 +178,12 @@ export function renderPortal(s: PortalState): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>M365 Reporting MCP Gateway</title>
+<title>AV MCP Gateway</title>
 ${PORTAL_STYLE}
 </head>
 <body>
 ${renderNav("/")}
-<h1>Microsoft 365 Reporting MCP Gateway</h1>
+<h1>AV MCP Gateway</h1>
 <div class="muted">Read broadly, write narrowly · ${s.toolCount} tool (${s.writeToolCount} írási, mind külön jóváhagyáshoz kötve)</div>
 
 ${identityCard}
@@ -269,7 +269,7 @@ function renderPortalBody(s: PortalState): string {
     <li><b>Szerkesztés</b> menü → <b>Beállítások</b>.</li>
     <li>Bal oldalt keresd meg a <b>Bővítmények</b> (Connectors) menüpontot.</li>
     <li><b>Hozzáadás</b> → <b>MCP-kiszolgáló hozzáadása</b>.</li>
-    <li>Kapcsolat típusa: <b>Közvetíthető HTTP</b> (Streamable HTTP), URL: a fenti cím. Adj neki nevet, pl. <i>M365 Reporting</i>.</li>
+    <li>Kapcsolat típusa: <b>Közvetíthető HTTP</b> (Streamable HTTP), URL: a fenti cím. Adj neki nevet, pl. <i>AV MCP Gateway</i>.</li>
     <li>Mentés után nyomd meg az <b>MCP-k és hitelesítés</b> gombot → jelentkezz be a vállalati Microsoft-fiókoddal.</li>
     <li>Siker esetén a bővítmény adatlapján megjelenik az elérhető eszközök (toolok) listája.</li>
   </ol>
@@ -277,13 +277,13 @@ function renderPortalBody(s: PortalState): string {
   <h3>🟠 Claude (claude.ai vagy Claude Desktop)</h3>
   <ol>
     <li>Bal alsó profilmenü → <b>Settings</b> → <b>Connectors</b>.</li>
-    <li><b>Add custom connector</b> → Name: pl. <i>M365 Reporting</i>, Remote MCP server URL: a fenti cím → <b>Add</b>.</li>
+    <li><b>Add custom connector</b> → Name: pl. <i>AV MCP Gateway</i>, Remote MCP server URL: a fenti cím → <b>Add</b>.</li>
     <li>A connector mellett <b>Connect</b> → vállalati Microsoft-bejelentkezés → engedélyezés.</li>
     <li>Új beszélgetésben a keresés/eszközök ikonnál kapcsold be a connectort.</li>
   </ol>
 
   <h3>🟣 Claude Code (terminál)</h3>
-  <pre class="cmd">claude mcp add --transport http m365-reporting ${esc(s.baseUrl)}/mcp</pre>
+  <pre class="cmd">claude mcp add --transport http av-mcp-gateway ${esc(s.baseUrl)}/mcp</pre>
   <ol>
     <li>Futtasd a fenti parancsot (a <code>--scope user</code> kapcsolóval minden projektedben elérhető lesz).</li>
     <li>A Claude Code-ban add ki a <code>/mcp</code> parancsot → <b>Authenticate</b> → böngészős Microsoft-bejelentkezés.</li>
@@ -319,7 +319,7 @@ function renderPortalBody(s: PortalState): string {
 </div>
 
 <footer class="muted">
-  <a href="/ujdonsagok">Újdonságok</a> · <a href="/admin">Admin felület</a> · <a href="/healthz">Állapot</a> · m365-reporting-mcp v1.0
+  <a href="/ujdonsagok">Újdonságok</a> · <a href="/admin">Admin felület</a> · <a href="/healthz">Állapot</a> · av-mcp-gateway v1.0
   <div style="margin-top:.5rem">By Botha Levente @alphavet 2026</div>
 </footer>
 </body>

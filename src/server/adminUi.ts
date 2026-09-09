@@ -4,7 +4,7 @@ export const ADMIN_HTML = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>M365 Reporting MCP – Admin</title>
+<title>AV MCP Gateway – Admin</title>
 <style>
   :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
   body { margin: 0; padding: 1.25rem; max-width: 1250px; margin-inline: auto; }
@@ -39,7 +39,7 @@ export const ADMIN_HTML = `<!doctype html>
 </style>
 </head>
 <body>
-<h1>Microsoft 365 Reporting MCP – Admin</h1>
+<h1>AV MCP Gateway – Admin</h1>
 <div class="muted">Read broadly, write narrowly · v1.0</div>
 <div class="keybar" id="authbar">
   <span class="muted">Betöltés…</span>

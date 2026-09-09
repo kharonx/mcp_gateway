@@ -1,4 +1,4 @@
-# Microsoft 365 Reporting MCP — v1.0
+# AV MCP Gateway — v1.0
 
 Vállalati MCP szerver, amelyen keresztül ChatGPT, Claude és más MCP-kompatibilis AI-kliensek
 **kontrolláltan** férnek hozzá a Microsoft 365 információforrásaihoz (Outlook, Naptár, Teams,
@@ -19,7 +19,7 @@ ChatGPT / Claude / MCP kliens
         │  MCP over HTTPS (Streamable HTTP) + OAuth bearer token
         ▼
 ┌──────────────────────────────┐
-│  m365-reporting-mcp          │   Tool allowlist (86 tool, 11 WRITE = csak mail)
+│  av-mcp-gateway              │   Tool allowlist (86 tool, 11 WRITE = csak mail)
 │  · JWT validálás (Entra)     │   Nincs generikus graph-request / $batch passthrough
 │  · On-Behalf-Of tokencsere   │   Audit log (JSONL, tartalom nélkül)
 │  · Pagination + 429 retry    │   Forráskövetés (_source blokk minden objektumon)
@@ -112,7 +112,7 @@ Csatlakoztatás ChatGPT-ből:
    lép be, és csak a saját M365 jogosultságait kapja.
 
 Claude Desktop / Claude Code: ugyanez az URL remote MCP-ként, vagy lokálisan stdio mód
-(`claude mcp add m365-reporting -- node dist/index.js --stdio`).
+(`claude mcp add av-mcp-gateway -- node dist/index.js --stdio`).
 
 ## Adminok és felhasználók
 

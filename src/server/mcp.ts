@@ -3,7 +3,7 @@ import { registerAllTools } from "../tools/registry.js";
 import { allEndpoints } from "../tools/endpoints/all.js";
 import type { EndpointDef, ToolContext } from "../tools/types.js";
 
-const INSTRUCTIONS = `Microsoft 365 Reporting MCP (v1.0). Profile: read broadly, write narrowly.
+const INSTRUCTIONS = `AV MCP Gateway (v1.0) - Microsoft 365 and optional Salesforce. Profile: read broadly, write narrowly.
 
 - Every call runs with the signed-in user's own Microsoft 365 permissions (delegated OAuth). Nothing beyond what the user could see in Outlook/Teams/SharePoint themselves.
 - READ tools cover Mail, Calendar (incl. colleagues' free/busy availability and meeting-time suggestions), Teams, Meetings + transcripts, OneNote, SharePoint, OneDrive, Loop, cross-source Search and Users.
@@ -15,7 +15,7 @@ const INSTRUCTIONS = `Microsoft 365 Reporting MCP (v1.0). Profile: read broadly,
 
 export function buildMcpServer(ctx: ToolContext): { server: McpServer; enabled: EndpointDef[] } {
   const server = new McpServer(
-    { name: "m365-reporting-mcp", version: "1.0.0" },
+    { name: "av-mcp-gateway", version: "1.0.0" },
     { capabilities: { tools: {} }, instructions: INSTRUCTIONS }
   );
   const enabled = registerAllTools(server, allEndpoints, ctx);

@@ -22,6 +22,6 @@ export async function runStdio(cfg: AppConfig): Promise<void> {
     config: cfg,
   };
   const { server, enabled } = buildMcpServer(ctx);
-  process.stderr.write(`m365-reporting-mcp: stdio mode, ${enabled.length} tools registered\n`);
+  process.stderr.write(`av-mcp-gateway: stdio mode, ${enabled.length} tools registered\n`);
   await server.connect(new StdioServerTransport());
 }
