@@ -18,7 +18,7 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-09",
-    commit: "HEADHASH",
+    commit: "3125d95",
     title: "Megújult kezdőoldal",
     items: [
       "Új kinézet: fejléc a navigációval, platform-csempék (Microsoft 365, Salesforce) a bekötés állapotával, a hozzáférés-leírásban az olvasás és az írás egymás mellett, a kliens-útmutatók (ChatGPT, Claude, Claude Code) és a hibaelhárítás összecsukható szakaszokban.",
