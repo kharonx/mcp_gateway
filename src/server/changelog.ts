@@ -18,7 +18,7 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-09",
-    commit: "HEADHASH",
+    commit: "2e98dbb",
     title: "Kezdőoldal: platformonként mit ér el az AI",
     items: [
       "A kezdőoldal „Mihez fér hozzá az AI” blokkja platformonként bontva mutatja a bekötött rendszereket. Jelenleg két platform van: Microsoft 365 (Outlook, naptár, Teams, meetingek, OneDrive, SharePoint, OneNote, Loop, címtár, keresés) és Salesforce (standard és egyedi objektumok, SOQL/SOSL, ügyfél-áttekintés, riportok).",
