@@ -18,6 +18,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-09",
+    commit: "HEADHASH",
+    title: "Megújult kezdőoldal",
+    items: [
+      "Új kinézet: fejléc a navigációval, platform-csempék (Microsoft 365, Salesforce) a bekötés állapotával, a hozzáférés-leírásban az olvasás és az írás egymás mellett, a kliens-útmutatók (ChatGPT, Claude, Claude Code) és a hibaelhárítás összecsukható szakaszokban.",
+      "Bejelentkezés nélkül a kezdőoldal csak a bejelentkezés gombot mutatja; a részletek (mihez fér hozzá az AI, MCP URL, kliensbeállítás, újdonságok) kizárólag bejelentkezés után látszanak.",
+      "Az Admin menüpont csak gateway-adminoknak jelenik meg; az admin felületről és az Újdonságok oldalról vissza lehet lépni a kezdőoldalra.",
+    ],
+  },
+  {
+    date: "2026-09-09",
     commit: "2e98dbb",
     title: "Kezdőoldal: platformonként mit ér el az AI",
     items: [
@@ -115,30 +125,30 @@ function esc(s: unknown): string {
 export function renderChangelogEntry(e: ChangelogEntry): string {
   return `
   <div class="card">
-    <h2>${esc(e.title)}</h2>
-    <div class="muted">${esc(e.date)} · <code>${esc(e.commit)}</code></div>
+    <div class="card-head"><h2>${esc(e.title)}</h2><span class="muted">${esc(e.date)} · <code>${esc(e.commit)}</code></span></div>
     <ul>
       ${e.items.map((i) => `<li>${esc(i)}</li>`).join("\n      ")}
     </ul>
   </div>`;
 }
 
-/** Full /ujdonsagok page. `nav` is the shared top navigation markup, `style` the shared stylesheet. */
-export function renderChangelogPage(nav: string, style: string): string {
+/** Full /ujdonsagok page. `nav` is the shared top navigation markup, `head` the shared <head> content (renderHead). */
+export function renderChangelogPage(nav: string, head: string): string {
   return `<!doctype html>
 <html lang="hu">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Újdonságok · AV MCP Gateway</title>
-${style}
+${head}
 </head>
 <body>
 ${nav}
-<h1>Újdonságok</h1>
-<div class="muted">Minden telepítéskor ide kerülnek a felhasználók számára látható változások, a legfrissebb elöl.</div>
+<main>
+<header class="pagehead">
+  <h1>Újdonságok</h1>
+  <p class="muted">Minden telepítéskor ide kerülnek a felhasználók számára látható változások, a legfrissebb elöl.</p>
+</header>
 ${CHANGELOG.map(renderChangelogEntry).join("\n")}
-<footer class="muted"><a href="/">Vissza a kezdőoldalra</a></footer>
+</main>
+<footer class="muted"><a href="/">← Vissza a kezdőoldalra</a></footer>
 </body>
 </html>`;
 }

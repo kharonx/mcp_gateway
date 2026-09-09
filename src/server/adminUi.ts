@@ -40,7 +40,7 @@ export const ADMIN_HTML = `<!doctype html>
 </head>
 <body>
 <h1>AV MCP Gateway – Admin</h1>
-<div class="muted">Read broadly, write narrowly · v1.0</div>
+<div class="muted">Read broadly, write narrowly · v1.0 · <a href="/">← Kezdőoldal</a> · <a href="/ujdonsagok">Újdonságok</a></div>
 <div class="keybar" id="authbar">
   <span class="muted">Betöltés…</span>
 </div>

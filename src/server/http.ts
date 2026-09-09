@@ -9,7 +9,7 @@ import { GraphClient } from "../graph/client.js";
 import { AuditLogger } from "../audit/audit.js";
 import { buildMcpServer } from "./mcp.js";
 import { ADMIN_HTML } from "./adminUi.js";
-import { renderPortal, buildCapabilities, renderNav, PORTAL_STYLE } from "./portalUi.js";
+import { renderPortal, buildCapabilities, renderNav, renderHead } from "./portalUi.js";
 import { renderChangelogPage } from "./changelog.js";
 import { allEndpoints } from "../tools/endpoints/all.js";
 import { isToolEnabled } from "../tools/registry.js";
@@ -244,8 +244,10 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     res.redirect("/");
   });
 
-  app.get("/ujdonsagok", (_req, res) => {
-    res.type("html").send(renderChangelogPage(renderNav("/ujdonsagok"), PORTAL_STYLE));
+  app.get("/ujdonsagok", (req, res) => {
+    const { sess } = getSession(req);
+    const isAdmin = !!sess?.oid && users.isAdmin(sess.oid);
+    res.type("html").send(renderChangelogPage(renderNav("/ujdonsagok", { isAdmin }), renderHead("Újdonságok · AV MCP Gateway")));
   });
 
   app.get("/healthz", (_req, res) => {
