@@ -18,7 +18,7 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-11",
-    commit: "HEADHASH",
+    commit: "239df52",
     title: "Salesforce: törlés külön, kikapcsolt toolsetben",
     items: [
       "A Salesforce saját hosted MCP-szervere (2026 áprilisa óta GA) az írást három külön szerverre bontja: olvasás, létrehozás/módosítás (SObject Mutations) és törlés (SObject Deletes). A gateway ugyanezt a felosztást követi: a meglévő salesforce-write toolset mellett új salesforce-delete toolset egyetlen toollal (delete-salesforce-record).",
