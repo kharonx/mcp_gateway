@@ -21,6 +21,8 @@ import type { AppConfig } from "../config.js";
 
 const ALL_TOOLSETS: Toolset[] = [
   "salesforce",
+  "salesforce-write",
+  "salesforce-delete",
   "mail",
   "shared-mail",
   "mail-write",
@@ -138,6 +140,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       toolCount: enabled.length,
       writeToolCount: enabled.filter((d) => d.write).length,
       salesforceWrite: enabled.some((d) => d.toolset === "salesforce-write"),
+      salesforceDelete: enabled.some((d) => d.toolset === "salesforce-delete"),
       ...buildCapabilities(enabled),
     };
   };

@@ -9,6 +9,7 @@ import type { SfConnectionInfo } from "../salesforce/auth.js";
 export type Toolset =
   | "salesforce"
   | "salesforce-write"
+  | "salesforce-delete"
   | "mail"
   | "mail-write"
   | "shared-mail"
@@ -25,7 +26,7 @@ export type Toolset =
   | "search"
   | "users";
 
-export const WRITE_TOOLSETS: Toolset[] = ["mail-write", "shared-mail-write", "calendar-write", "teams-write", "salesforce-write"];
+export const WRITE_TOOLSETS: Toolset[] = ["mail-write", "shared-mail-write", "calendar-write", "teams-write", "salesforce-write", "salesforce-delete"];
 
 export interface QueryCapabilities {
   filter?: boolean;
@@ -52,7 +53,7 @@ export interface EndpointDef {
   handler?: (args: Record<string, any>, ctx: ToolContext) => Promise<unknown>;
   /** Delegated Graph scopes used by this tool (documentation + matrix). */
   scopes: string[];
-  method: "GET" | "POST" | "PATCH";
+  method: "GET" | "POST" | "PATCH" | "DELETE";
   /** Graph v1.0 path template, placeholders in {braces} become required string inputs. */
   path: string;
   pathParamDescriptions?: Record<string, string>;

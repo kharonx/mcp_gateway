@@ -138,7 +138,7 @@ export class SalesforceClient {
     return url.toString();
   }
 
-  async request(method: "GET" | "POST" | "PATCH", path: string, opts: SfRequestOptions = {}): Promise<any> {
+  async request(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, opts: SfRequestOptions = {}): Promise<any> {
     const url = this.buildUrl(path, opts.query);
     for (let attempt = 0; attempt < 2; attempt++) {
       const res = await fetch(url, {

@@ -43,9 +43,9 @@ ${rows.join("\n")}
 
 - No generic \`graph-request(method, url, body)\` passthrough tool.
 - No \`$batch\` passthrough.
-- No Files/Sites/OneNote/User/Group write, and no delete anywhere.
+- No Files/Sites/OneNote/User/Group write, and no delete on the Microsoft 365 side.
 - Mail delete / folder delete / destructive mailbox operations are excluded.
-- Salesforce (optional): reads plus a narrow write surface (create/update record, task, event, Chatter post, note) - no delete, no Apex/Bulk/Metadata API; every call uses the user's own linked Salesforce login.
+- Salesforce (optional): reads plus a narrow write surface (create/update record, task, event, Chatter post, note) in toolset \`salesforce-write\`; a single \`delete-salesforce-record\` tool (Recycle Bin, 15 days) in the opt-in toolset \`salesforce-delete\`, which must be enabled explicitly; no Apex/Bulk/Metadata API; every call uses the user's own linked Salesforce login.
 `;
 
 const out = path.resolve("docs/tool-matrix.md");

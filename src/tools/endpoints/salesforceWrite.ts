@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { EndpointDef, ToolContext } from "../types.js";
 import type { AuditEntry } from "../../audit/audit.js";
 import { assertObjectName, requireSf } from "./salesforce.js";
-import type { SalesforceClient } from "../../salesforce/client.js";
+import { soqlString, type SalesforceClient } from "../../salesforce/client.js";
 
 /**
  * Optional Salesforce WRITE toolset. The read toolset covers everything the
@@ -12,8 +12,12 @@ import type { SalesforceClient } from "../../salesforce/client.js";
  * Same guarantees as the read side - the caller's own Salesforce connection,
  * so a write succeeds only where that Salesforce user could have done it by
  * hand, and the record shows up under their name. Every tool requires
- * confirm=true after explicit user approval, and there is deliberately no
- * delete tool.
+ * confirm=true after explicit user approval.
+ *
+ * Mirrors the split of Salesforce's own hosted MCP servers (GA April 2026):
+ * "SObject Mutations" = toolset salesforce-write (create + update, never
+ * delete), "SObject Deletes" = toolset salesforce-delete (one tool, moves the
+ * record to the Recycle Bin), which is opt-in and must be enabled explicitly.
  */
 
 const SF_SCOPES = ["Salesforce: api"];
@@ -356,5 +360,56 @@ export const salesforceWriteEndpoints: EndpointDef[] = [
       };
     },
     auditWrite: writeAudit((a) => `note on ${a.recordId}: ${a.title}`),
+  },
+  {
+    name: "delete-salesforce-record",
+    description:
+      "DELETE a Salesforce record. The record moves to the Salesforce Recycle Bin, where the user can restore it for up to 15 days; Salesforce may cascade-delete children (e.g. an Account's Contacts and Opportunities). Works only where the connected Salesforce user could delete the record by hand. DESTRUCTIVE WRITE - read the record first (get-salesforce-record), tell the user exactly which record will be deleted (object, name, id) and call with confirm=true only after their explicit approval. Never delete in bulk without a per-record confirmation.",
+    toolset: "salesforce-delete",
+    write: true,
+    provider: "salesforce",
+    scopes: SF_SCOPES,
+    method: "DELETE",
+    path: "/services/data/vXX.X/sobjects/{object}/{recordId}",
+    pathParamDescriptions: {
+      object: "Salesforce object API name, e.g. Task, Lead or MyObject__c",
+      recordId: "15 or 18 character id of the record to delete",
+    },
+    resourceType: "salesforce",
+    confirmRequired: true,
+    handler: async (args, ctx) => {
+      const client = requireSf(ctx);
+      const object = assertObjectName(args.object);
+      const recordId = optionalId(args, "recordId")!;
+      const d = await client.describe(object);
+      if (d.deletable === false) {
+        throw new Error(`The connected Salesforce user cannot delete ${object} records in this org.`);
+      }
+      // Snapshot the display name first, so the result and the audit log say WHAT was deleted,
+      // and a wrong id fails before anything is touched.
+      const nameField: string | undefined = (d.fields ?? []).find((f: any) => f.nameField)?.name;
+      const r = await client.query(
+        `SELECT Id${nameField ? ", " + nameField : ""} FROM ${object} WHERE Id = ${soqlString(recordId)}`,
+        { maxItems: 1 }
+      );
+      if (!r.records.length) {
+        throw new Error(`No ${object} record with id ${recordId} is visible to the connected Salesforce user - nothing was deleted.`);
+      }
+      const name = nameField ? String(r.records[0][nameField] ?? "") : undefined;
+      await client.request("DELETE", client.data(`/sobjects/${encodeURIComponent(object)}/${encodeURIComponent(recordId)}`));
+      return {
+        deleted: true,
+        id: recordId,
+        objectType: object,
+        ...(name ? { name } : {}),
+        recycleBin: "The record is now in the Salesforce Recycle Bin and can be restored there (Setup > Recycle Bin, or the user's own Recycle Bin) for up to 15 days.",
+      };
+    },
+    auditWrite: (args, result) => ({
+      sender: "me",
+      subject: `delete ${args.object} ${args.recordId}${result?.name ? ` (${String(result.name).slice(0, 120)})` : ""}`.slice(0, 200),
+      messageId: args.recordId,
+      result: result ? "ok" : "error",
+    }),
   },
 ];

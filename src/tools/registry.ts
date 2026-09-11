@@ -169,7 +169,7 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
             (result as any).note =
               `${(result as any).note ?? ""} File exceeds MAX_DOWNLOAD_BYTES (${config.maxDownloadBytes}); content was truncated.`.trim();
           }
-        } else if (def.method !== "GET") {
+        } else if (def.method === "POST" || def.method === "PATCH") {
           const body = def.buildBody ? def.buildBody(args) : {};
           result = await ctx.graph.request(def.method, graphPath, { body });
         } else if (def.paginated) {
@@ -243,6 +243,9 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
 export function isToolEnabled(def: EndpointDef, cfg: AppConfig): boolean {
   if (cfg.readOnly && (def.write || WRITE_TOOLSETS.includes(def.toolset))) return false;
   if (cfg.enabledToolsets && !cfg.enabledToolsets.includes(def.toolset)) return false;
+  // Deleting is opt-in: the toolset must be listed explicitly in the admin UI / ENABLED_TOOLSETS
+  // (mirrors Salesforce's own hosted MCP, where "SObject Deletes" is a separately activated server).
+  if (def.toolset === "salesforce-delete" && !cfg.enabledToolsets?.includes("salesforce-delete")) return false;
   if (def.provider === "salesforce" && !isSalesforceConfigured(cfg)) return false;
   return true;
 }

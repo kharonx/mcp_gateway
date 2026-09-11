@@ -17,6 +17,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-09-11",
+    commit: "HEADHASH",
+    title: "Salesforce: törlés külön, kikapcsolt toolsetben",
+    items: [
+      "A Salesforce saját hosted MCP-szervere (2026 áprilisa óta GA) az írást három külön szerverre bontja: olvasás, létrehozás/módosítás (SObject Mutations) és törlés (SObject Deletes). A gateway ugyanezt a felosztást követi: a meglévő salesforce-write toolset mellett új salesforce-delete toolset egyetlen toollal (delete-salesforce-record).",
+      "A törlés alapból ki van kapcsolva, és csak akkor él, ha az admin a toolset-listában kifejezetten bepipálja. A rekord a Salesforce Lomtárba kerül, onnan 15 napig visszaállítható; a gateway törlés előtt lekérdezi a rekord nevét, hogy az AI pontosan meg tudja nevezni, mit töröl, és a név az auditnaplóba is bekerül. Minden törlés rekordonként külön jóváhagyáshoz kötött.",
+      "Admin felület: a salesforce-write és a salesforce-delete toolset mostantól megjelenik a toolset-listában, így külön ki-be kapcsolható (eddig a Salesforce-írás hiányzott a listából).",
+      "A kezdőoldal, az MCP-szerver leírása és a dokumentáció jelzi, ha a törlés engedélyezve van.",
+    ],
+  },
+  {
     date: "2026-09-09",
     commit: "3125d95",
     title: "Megújult kezdőoldal",

@@ -7,9 +7,9 @@ Principle: **read broadly, write narrowly** - the WRITE surface is Outlook mail
 Salesforce Connected App is configured - Salesforce activity/record writes. Every
 outbound send and every Salesforce write is gated by `confirm=true`.
 
-Total tools: **120** (23 WRITE, 97 READ)
+Total tools: **121** (24 WRITE, 97 READ)
 
-Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (5), salesforce (11), salesforce-write (6)
+Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (5), salesforce (11), salesforce-write (6), salesforce-delete (1)
 
 | MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -133,11 +133,12 @@ Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), cale
 | `create-salesforce-event` | salesforce-write | **WRITE** | POST | `Salesforce /services/data/vXX.X/sobjects/Event` | Salesforce: api | optional (Connected App configured) | confirm-required |
 | `post-salesforce-chatter` | salesforce-write | **WRITE** | POST | `Salesforce /services/data/vXX.X/sobjects/FeedItem` | Salesforce: api | optional (Connected App configured) | confirm-required |
 | `create-salesforce-note` | salesforce-write | **WRITE** | POST | `Salesforce /services/data/vXX.X/sobjects/ContentNote` | Salesforce: api | optional (Connected App configured) | confirm-required |
+| `delete-salesforce-record` | salesforce-delete | **WRITE** | DELETE | `Salesforce /services/data/vXX.X/sobjects/{object}/{recordId}` | Salesforce: api | optional (Connected App configured) | confirm-required |
 
 ## Deliberately NOT exposed (safety layer, spec sections 19-20)
 
 - No generic `graph-request(method, url, body)` passthrough tool.
 - No `$batch` passthrough.
-- No Files/Sites/OneNote/User/Group write, and no delete anywhere.
+- No Files/Sites/OneNote/User/Group write, and no delete on the Microsoft 365 side.
 - Mail delete / folder delete / destructive mailbox operations are excluded.
-- Salesforce (optional): reads plus a narrow write surface (create/update record, task, event, Chatter post, note) - no delete, no Apex/Bulk/Metadata API; every call uses the user's own linked Salesforce login.
+- Salesforce (optional): reads plus a narrow write surface (create/update record, task, event, Chatter post, note) in toolset `salesforce-write`; a single `delete-salesforce-record` tool (Recycle Bin, 15 days) in the opt-in toolset `salesforce-delete`, which must be enabled explicitly; no Apex/Bulk/Metadata API; every call uses the user's own linked Salesforce login.

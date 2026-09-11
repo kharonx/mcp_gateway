@@ -15,6 +15,8 @@ export interface PortalState {
   loginError?: string;
   /** True when the optional Salesforce WRITE toolset is enabled (changes what we promise on this page). */
   salesforceWrite?: boolean;
+  /** True when the opt-in Salesforce DELETE toolset is enabled. */
+  salesforceDelete?: boolean;
   /** Present only when the optional Salesforce Connected App is configured. */
   salesforce?: {
     connected: boolean;
@@ -89,7 +91,12 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): { platforms: Plat
   if (on.has("salesforce-write")) {
     sfWrite.push("Feladat (Task) és esemény (Event) rögzítése ügyfélhez, kapcsolathoz vagy lehetőséghez");
     sfWrite.push("Tetszőleges rekord létrehozása és mezőinek módosítása (pl. Case lezárása, Opportunity szakaszváltás) — csak írható mezők, describe alapján ellenőrizve");
-    sfWrite.push("Chatter-bejegyzés a rekord feedjére, jegyzet csatolása — törlés nincs");
+    sfWrite.push("Chatter-bejegyzés a rekord feedjére, jegyzet csatolása");
+    sfWrite.push(
+      on.has("salesforce-delete")
+        ? "Rekord törlése (a Salesforce Lomtárba kerül, onnan 15 napig visszaállítható) — külön, kifejezetten engedélyezett toolset, rekordonkénti jóváhagyással"
+        : "Törlés nincs"
+    );
   }
 
   const platforms: PlatformCapabilities[] = [];
@@ -264,7 +271,7 @@ function renderSalesforceTile(s: PortalState): string {
     <p><b>${esc(sf.info.name ?? sf.info.username ?? "Salesforce-felhasználó")}</b>
       ${sf.info.username ? `<span class="muted">(${esc(sf.info.username)})</span>` : ""}<br>
       <span class="muted">${esc(sf.info.instanceUrl)} · összekötve ${esc(sf.info.connectedAt.slice(0, 16).replace("T", " "))} UTC</span></p>
-    <p class="muted">${s.salesforceWrite ? "Olvasás és írás a te jogosultságaiddal, minden írás külön jóváhagyással. Törlés nincs." : "Csak olvasás a te jogosultságaiddal."}</p>
+    <p class="muted">${s.salesforceWrite ? `Olvasás és írás a te jogosultságaiddal, minden írás külön jóváhagyással. ${s.salesforceDelete ? "Törlés is engedélyezve (Lomtárba, 15 napig visszaállítható)." : "Törlés nincs."}` : "Csak olvasás a te jogosultságaiddal."}</p>
     <p class="cta"><a class="btn sec small" href="/auth/salesforce/disconnect">Kapcsolat bontása</a></p>
   </div>`;
   }

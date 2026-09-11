@@ -155,8 +155,13 @@ mint amit ő maga meg is tehetne a Salesforce-ban.
   `create-salesforce-record`, `update-salesforce-record`, `post-salesforce-chatter`,
   `create-salesforce-note`. Mindegyik `confirm=true`-hoz kötött, és a mezőket a hívás előtt a
   `describe` alapján ellenőrzi (nem létező vagy nem írható mező érthető hibát ad, nem 400-at).
-  **Törlés nincs**, és nincs Apex, Bulk vagy Metadata API. A toolset a szokásos módon kikapcsolható
+  Nincs Apex, Bulk vagy Metadata API. A toolset a szokásos módon kikapcsolható
   (`ENABLED_TOOLSETS`, admin felület), és a `READ_ONLY=true` mód is letiltja.
+- **Toolok (DELETE, `salesforce-delete` toolset, alapból kikapcsolva):** `delete-salesforce-record` —
+  egy rekord törlése a Salesforce Lomtárba (15 napig visszaállítható), a törlés előtt a rekord nevét
+  lekérdezi és az auditnaplóba írja. Csak akkor él, ha az `ENABLED_TOOLSETS` / admin toolset-lista
+  kifejezetten tartalmazza — ugyanúgy, ahogy a Salesforce saját hosted MCP-jében az „SObject Deletes”
+  szerver külön aktiválható a Mutations mellett.
   Az auditnaplóban a Salesforce-hívások `salesforce:` előtaggal jelennek meg; írásnál a létrejött
   rekord azonosítója is bekerül a naplóba.
 

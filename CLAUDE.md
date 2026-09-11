@@ -10,7 +10,10 @@
 - Salesforce is optional: tools with `provider: "salesforce"` are registered only when a Connected
   App is configured (admin UI / `SF_CLIENT_ID`); per-user OAuth (PKCE) keyed by Entra oid in
   `data/salesforce-tokens.json`. Reads live in `salesforce.ts` (toolset `salesforce`), writes in
-  `salesforceWrite.ts` (toolset `salesforce-write`, every tool `confirmRequired`, no delete).
+  `salesforceWrite.ts` (toolset `salesforce-write`, every tool `confirmRequired`); the single delete tool
+  lives in the same file under toolset `salesforce-delete`, which is opt-in (enabled only when listed
+  explicitly in `ENABLED_TOOLSETS` / the admin toolset list). Mirrors Salesforce's hosted MCP split
+  (SObject Reads / Mutations / Deletes).
   Never write Salesforce (or any) secrets into the repo.
 - Graph quirks already handled (keep them): OneNote notebooks/sections return no `@odata.nextLink`
   (`skipPaging`), OneNote pages have no full-text search in v1.0, `parentNotebook` needs `$expand`,
