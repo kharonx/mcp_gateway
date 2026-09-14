@@ -10,7 +10,7 @@ import { AuditLogger } from "../audit/audit.js";
 import { buildMcpServer } from "./mcp.js";
 import { ADMIN_HTML } from "./adminUi.js";
 import { renderPortal, buildCapabilities, renderNav, renderHead } from "./portalUi.js";
-import { renderChangelogPage } from "./changelog.js";
+import { renderChangelogPage, buildInfo } from "./changelog.js";
 import { allEndpoints } from "../tools/endpoints/all.js";
 import { isToolEnabled } from "../tools/registry.js";
 import type { Toolset, ToolContext } from "../tools/types.js";
@@ -257,7 +257,8 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     res.json({
       status: "ok",
       name: "av-mcp-gateway",
-      version: "1.0.0",
+      version: buildInfo().version,
+      build: buildInfo(),
       configured: isEntraConfigured(cfg),
       salesforce: isSalesforceConfigured(cfg),
     });

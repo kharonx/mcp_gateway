@@ -122,7 +122,7 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): { platforms: Plat
   }
 
   // Future-proofing: any toolset without a curated line above still shows up.
-  const covered: Toolset[] = ["mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write"];
+  const covered: Toolset[] = ["gateway", "mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write", "salesforce-delete"];
   for (const t of on) {
     if (covered.includes(t)) continue;
     const reads = enabledDefs.filter((d) => d.toolset === t && !d.write).length;

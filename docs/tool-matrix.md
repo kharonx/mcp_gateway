@@ -7,12 +7,13 @@ Principle: **read broadly, write narrowly** - the WRITE surface is Outlook mail
 Salesforce Connected App is configured - Salesforce activity/record writes. Every
 outbound send and every Salesforce write is gated by `confirm=true`.
 
-Total tools: **121** (24 WRITE, 97 READ)
+Total tools: **122** (24 WRITE, 98 READ)
 
-Toolsets: mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (5), salesforce (11), salesforce-write (6), salesforce-delete (1)
+Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (5), salesforce (11), salesforce-write (6), salesforce-delete (1)
 
 | MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
+| `get-gateway-info` | gateway | READ | GET | `Gateway (internal) /gateway/info` |  | always on |  |
 | `list-mail-messages` | mail | READ | GET | `/me/messages` | Mail.Read | enabled | paginated, time-range, search |
 | `get-mail-message` | mail | READ | GET | `/me/messages/{messageId}` | Mail.Read | enabled |  |
 | `list-mail-folders` | mail | READ | GET | `/me/mailFolders` | Mail.Read | enabled | paginated |

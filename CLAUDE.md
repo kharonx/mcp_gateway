@@ -7,6 +7,9 @@
 - Deploy: Coolify UI (http://coolify.alpha-vet.hu:8000, app **mcp-gateway**) → Actions → Redeploy.
   No push webhook. Production: https://mcp-gateway.doki4vet.hu.
 - `npm run build` then `npm run matrix` (regenerates `docs/tool-matrix.md`) before committing tool changes.
+- MCP `instructions` are GENERATED in `src/server/mcp.ts` (`buildInstructions`) from the enabled toolsets plus
+  the newest changelog entry; never hand-edit capability claims there - add a toolset label to `TOOLSET_LABELS`
+  when adding a toolset. `get-gateway-info` (toolset `gateway`, always on) returns the same profile to the AI.
 - Salesforce is optional: tools with `provider: "salesforce"` are registered only when a Connected
   App is configured (admin UI / `SF_CLIENT_ID`); per-user OAuth (PKCE) keyed by Entra oid in
   `data/salesforce-tokens.json`. Reads live in `salesforce.ts` (toolset `salesforce`), writes in

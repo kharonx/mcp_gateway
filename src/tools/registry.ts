@@ -145,7 +145,7 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
         tool: def.name,
         operation: def.write ? ("WRITE" as const) : ("READ" as const),
         resourceType: def.resourceType,
-        graphEndpoint: def.provider === "salesforce" ? `salesforce:${graphPath}` : graphPath,
+        graphEndpoint: def.provider === "salesforce" ? `salesforce:${graphPath}` : def.provider === "gateway" ? `gateway:${graphPath}` : graphPath,
         httpMethod: def.method,
       };
       try {
@@ -241,6 +241,9 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
  * exist only when a Connected App is configured).
  */
 export function isToolEnabled(def: EndpointDef, cfg: AppConfig): boolean {
+  // Gateway self-description is always available (read-only, no provider), so a client can
+  // always ask what this build offers even with an explicit toolset allowlist.
+  if (def.toolset === "gateway") return true;
   if (cfg.readOnly && (def.write || WRITE_TOOLSETS.includes(def.toolset))) return false;
   if (cfg.enabledToolsets && !cfg.enabledToolsets.includes(def.toolset)) return false;
   // Deleting is opt-in: the toolset must be listed explicitly in the admin UI / ENABLED_TOOLSETS

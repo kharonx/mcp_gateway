@@ -14,8 +14,8 @@ const rows = allEndpoints.map((d) => {
   if (d.query?.search || d.buildQuery) flags.push("search");
   if (d.binary) flags.push("content-download");
   if (d.confirmRequired) flags.push("confirm-required");
-  const endpoint = d.provider === "salesforce" ? `Salesforce ${d.path}` : d.path;
-  const state = d.provider === "salesforce" ? "optional (Connected App configured)" : "enabled";
+  const endpoint = d.provider === "salesforce" ? `Salesforce ${d.path}` : d.provider === "gateway" ? `Gateway (internal) ${d.path}` : d.path;
+  const state = d.provider === "salesforce" ? "optional (Connected App configured)" : d.provider === "gateway" ? "always on" : "enabled";
   return `| \`${d.name}\` | ${d.toolset} | ${d.write ? "**WRITE**" : "READ"} | ${d.method} | \`${endpoint}\` | ${d.scopes.join(", ")} | ${state} | ${flags.join(", ")} |`;
 });
 

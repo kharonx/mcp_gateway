@@ -15,9 +15,11 @@ import { searchEndpoints } from "./search.js";
 import { usersEndpoints } from "./users.js";
 import { salesforceEndpoints } from "./salesforce.js";
 import { salesforceWriteEndpoints } from "./salesforceWrite.js";
+import { gatewayEndpoints } from "./gateway.js";
 
 /** The complete AV MCP Gateway v1 tool matrix (Salesforce is optional - see registry.isToolEnabled). */
 export const allEndpoints: EndpointDef[] = [
+  ...gatewayEndpoints,
   ...mailEndpoints,
   ...mailWriteEndpoints,
   ...calendarEndpoints,

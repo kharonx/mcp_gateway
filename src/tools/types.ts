@@ -7,6 +7,7 @@ import type { SfConnectionInfo } from "../salesforce/auth.js";
 
 /** Logical toolsets of the Reporting profile (spec section 24). */
 export type Toolset =
+  | "gateway"
   | "salesforce"
   | "salesforce-write"
   | "salesforce-delete"
@@ -48,7 +49,7 @@ export interface EndpointDef {
   toolset: Toolset;
   write?: boolean;
   /** Data source. Default "graph" (Microsoft Graph); "salesforce" tools run through the caller's own Salesforce connection. */
-  provider?: "graph" | "salesforce";
+  provider?: "graph" | "salesforce" | "gateway";
   /** Custom implementation (non-Graph providers). Receives validated inputs and the tool context. */
   handler?: (args: Record<string, any>, ctx: ToolContext) => Promise<unknown>;
   /** Delegated Graph scopes used by this tool (documentation + matrix). */
@@ -118,6 +119,8 @@ export interface ToolContext {
   config: AppConfig;
   /** Present only in HTTP mode with a configured Salesforce Connected App. */
   salesforce?: SalesforceAccess;
+  /** The tool profile actually registered for this server instance (set by buildMcpServer). */
+  enabledTools?: EndpointDef[];
 }
 
 export function pathParams(template: string): string[] {

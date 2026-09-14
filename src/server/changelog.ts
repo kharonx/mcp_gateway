@@ -15,7 +15,25 @@ export interface ChangelogEntry {
   items: string[];
 }
 
+/** Version stamp of the running build: the deployed commit is the one stamped on the newest changelog entry. */
+export function buildInfo(): { version: string; commit: string; date: string } {
+  const latest = CHANGELOG[0];
+  const commit = (process.env.SOURCE_COMMIT || latest?.commit || "dev").replace(/\+$/, "").slice(0, 7);
+  return { version: `1.0.0+${commit}`, commit, date: latest?.date ?? "" };
+}
+
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    date: "2026-09-14",
+    commit: "HEADHASH",
+    title: "Az AI könnyebben észreveszi a frissítéseket",
+    items: [
+      "Az MCP-szerver bemutatkozó szövege (instructions) mostantól a ténylegesen engedélyezett toolkészletekből és a legfrissebb Újdonságok-bejegyzésből generálódik, így minden új beszélgetés elején pontosan azt látja az AI, ami a gatewayen éppen elérhető, és mi változott legutóbb. Eddig ez kézzel írt szöveg volt, ami el tudott csúszni a valóságtól.",
+      "Új tool: get-gateway-info. Visszaadja a build-verziót, az engedélyezett toolkészleteket és toolokat, a Salesforce-összekötés állapotát és az utolsó Újdonságok-bejegyzéseket. Az AI-nak szóló útmutatás szerint ezt hívja először, ha frissítést említesz, vagy egy képesség hiányozni látszik — és ha olyan toolt lát a listában, ami neki nincs, jelzi, hogy újra kell kötni a connectort.",
+      "A szerver verziója a build commitját is tartalmazza (pl. 1.0.0+abc1234), ez a kliensek connector-adatlapján és a /healthz végponton is látszik, így ránézésre eldönthető, hogy a kliens a friss gatewayt látja-e.",
+      "Emlékeztető: ha új tool kerül a gatewaybe, a ChatGPT-ben a connectort újra kell kötni (Disconnect, majd Connect), a claude.ai új beszélgetésnél frissít, a Claude Code-ban a /mcp parancsban kell újracsatlakozni.",
+    ],
+  },
   {
     date: "2026-09-11",
     commit: "239df52",
