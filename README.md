@@ -124,6 +124,14 @@ Claude Desktop / Claude Code: ugyanez az URL remote MCP-ként, vagy lokálisan s
 - Az `x-admin-key` fejléc továbbra is működik tartalékként (headless konfiguráció, scriptek).
 - A *Felhasználók* fül mutatja a Salesforce-összekötést is, és adminként bontható egy felhasználó
   Salesforce-kapcsolata (token revoke). Tároló: `data/users.json`.
+- **Felhasználónkénti jogosultság** (*Felhasználók* fül → *Szerkesztés*): toolset-allowlist a
+  gateway-szintű kapcsolókon belül, „csak olvasás” (minden írási tool tiltva), vagy az MCP-hozzáférés
+  teljes letiltása (403 a `/mcp`-n; portál és admin elérhető marad). Akinek nincs egyéni profilja, arra a
+  *Beállítások* fülön megadott **alapértelmezett felhasználói jogosultság** vonatkozik (env:
+  `DEFAULT_USER_TOOLSETS`, `DEFAULT_USER_READ_ONLY`). Az érvényesítés egy helyen történik
+  (`isToolEnabled(def, cfg, access)`), így az MCP tool-lista, a bemutatkozó szöveg, a `get-gateway-info`
+  és a kezdőoldal ugyanazt mutatja. A kliens cache-elt tool-listája miatt a változás után a connectort
+  újra kell kötni.
 
 ## Salesforce-összekötés (opcionális)
 

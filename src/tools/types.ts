@@ -4,6 +4,7 @@ import type { AuditLogger, AuditEntry } from "../audit/audit.js";
 import type { AppConfig } from "../config.js";
 import type { SalesforceClient } from "../salesforce/client.js";
 import type { SfConnectionInfo } from "../salesforce/auth.js";
+import type { UserAccess } from "../users.js";
 
 /** Logical toolsets of the Reporting profile (spec section 24). */
 export type Toolset =
@@ -121,6 +122,8 @@ export interface ToolContext {
   salesforce?: SalesforceAccess;
   /** The tool profile actually registered for this server instance (set by buildMcpServer). */
   enabledTools?: EndpointDef[];
+  /** The calling user's effective access profile (HTTP mode); absent = no per-user restriction. */
+  access?: UserAccess;
 }
 
 export function pathParams(template: string): string[] {

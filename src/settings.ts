@@ -14,6 +14,9 @@ export interface MutableSettings {
   baseUrl?: string;
   readOnly?: boolean;
   enabledToolsets?: string[] | null;
+  /** Default per-user access for users without an individual profile. */
+  defaultUserToolsets?: string[] | null;
+  defaultUserReadOnly?: boolean;
   defaultPageItems?: number;
   maxPageItems?: number;
   maxDownloadBytes?: number;
@@ -66,6 +69,10 @@ export class SettingsStore {
       baseUrl: (s.baseUrl ?? base.baseUrl).replace(/\/+$/, ""),
       readOnly: s.readOnly ?? base.readOnly,
       enabledToolsets: s.enabledToolsets !== undefined ? s.enabledToolsets : base.enabledToolsets,
+      defaultUserAccess: {
+        toolsets: s.defaultUserToolsets !== undefined ? s.defaultUserToolsets : base.defaultUserAccess.toolsets,
+        readOnly: s.defaultUserReadOnly ?? base.defaultUserAccess.readOnly,
+      },
       defaultPageItems: s.defaultPageItems ?? base.defaultPageItems,
       maxPageItems: s.maxPageItems ?? base.maxPageItems,
       maxDownloadBytes: s.maxDownloadBytes ?? base.maxDownloadBytes,

@@ -25,6 +25,17 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-14",
+    commit: "HEADHASH",
+    title: "Felhasználónkénti jogosultságok az admin felületen",
+    items: [
+      "Az admin felület Felhasználók fülén minden felhasználóhoz külön beállítható, mely toolseteket használhatja az AI a nevében (a gateway-szintű kapcsolókon belül), tiltható nála minden írás (csak olvasás), vagy letiltható az MCP-hozzáférése teljesen. A táblázat mutatja az egyéni vagy alapértelmezett profilt és a ténylegesen elérhető toolok számát.",
+      "Új beállítás: alapértelmezett felhasználói jogosultság. Erre esik vissza mindenki, akinek nincs egyéni profilja — így beállítható például, hogy új belépők alapból csak olvasni tudjanak, és írási jogot csak név szerint kapjon valaki.",
+      "A szűkítés az MCP-szerver tool-listájában, a bemutatkozó szövegében, a get-gateway-info válaszában és a kezdőoldal „Mihez fér hozzá az AI” blokkjában is megjelenik, a kezdőoldalon egy sor jelzi, ha egyéni vagy szűkített profil vonatkozik rád. Letiltott felhasználó MCP-hívásait a gateway 403-mal, magyar hibaüzenettel utasítja el; a portál és az admin felület elérhető marad.",
+      "A jogosultság-változás a következő MCP-hívástól él, de a kliens által cache-elt tool-lista miatt az AI-nak újra kell kötnie a connectort, hogy az új listát lássa.",
+    ],
+  },
+  {
+    date: "2026-09-14",
     commit: "0f5c6f3",
     title: "Az AI könnyebben észreveszi a frissítéseket",
     items: [

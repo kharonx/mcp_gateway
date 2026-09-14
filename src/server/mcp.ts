@@ -77,7 +77,7 @@ STALE TOOL LISTS: clients cache tools/list when they connect, so the tool list y
 }
 
 export function buildMcpServer(ctx: ToolContext): { server: McpServer; enabled: EndpointDef[] } {
-  const enabledDefs = allEndpoints.filter((d) => isToolEnabled(d, ctx.config));
+  const enabledDefs = allEndpoints.filter((d) => isToolEnabled(d, ctx.config, ctx.access));
   const fullCtx: ToolContext = { ...ctx, enabledTools: enabledDefs };
   const server = new McpServer(
     { name: "av-mcp-gateway", version: buildInfo().version },

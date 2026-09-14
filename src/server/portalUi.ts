@@ -17,6 +17,8 @@ export interface PortalState {
   salesforceWrite?: boolean;
   /** True when the opt-in Salesforce DELETE toolset is enabled. */
   salesforceDelete?: boolean;
+  /** One-line note about the signed-in user's access profile (individual or default restriction). */
+  accessNote?: string;
   /** Present only when the optional Salesforce Connected App is configured. */
   salesforce?: {
     connected: boolean;
@@ -204,6 +206,7 @@ function renderSignedIn(s: PortalState): string {
       : `<div class="status fail"><span class="dot"></span>Graph-teszt sikertelen: ${esc(s.graphError ?? "ismeretlen hiba")}
          <span class="muted">Jellemző ok: hiányzó admin consent az Entra app jogosultságain.</span></div>`
   }
+  ${s.accessNote ? `<p class="muted" style="margin:.7rem 0 0">${esc(s.accessNote)}</p>` : ""}
 </section>`;
 
   const platformTiles = `

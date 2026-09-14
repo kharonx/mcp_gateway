@@ -11,6 +11,7 @@ import { buildMcpServer } from "./mcp.js";
 import { ADMIN_HTML } from "./adminUi.js";
 import { renderPortal, buildCapabilities, renderNav, renderHead } from "./portalUi.js";
 import { renderChangelogPage, buildInfo } from "./changelog.js";
+import { effectiveAccess, type UserAccess } from "../users.js";
 import { allEndpoints } from "../tools/endpoints/all.js";
 import { isToolEnabled } from "../tools/registry.js";
 import type { Toolset, ToolContext } from "../tools/types.js";
@@ -134,8 +135,8 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     }
     return { sid, sess };
   };
-  const profileSummary = () => {
-    const enabled = allEndpoints.filter((d) => isToolEnabled(d, cfg));
+  const profileSummary = (access?: UserAccess) => {
+    const enabled = allEndpoints.filter((d) => isToolEnabled(d, cfg, access));
     return {
       toolCount: enabled.length,
       writeToolCount: enabled.filter((d) => d.write).length,
@@ -180,11 +181,23 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     }
     const sfConfigured = isSalesforceConfigured(cfg);
     const sfInfo = sfConfigured && sess?.oid ? sfAuth.info(sess.oid) : null;
+    const known = sess?.oid ? users.get(sess.oid) : undefined;
+    const access = sess?.oid ? effectiveAccess(known, cfg.defaultUserAccess) : undefined;
+    const accessNote = access
+      ? access.blocked
+        ? "Az MCP-hozzáférésed le van tiltva a gatewayen — az AI-kliens nem tud a nevedben hívást indítani. Kérj engedélyt egy admintól."
+        : known?.access
+          ? `Egyéni jogosultsági profil: ${access.toolsets ? access.toolsets.length + " toolset engedélyezve" : "minden toolset"}${access.readOnly ? ", csak olvasás" : ""}.`
+          : access.toolsets || access.readOnly
+            ? `Alapértelmezett felhasználói jogosultság: ${access.toolsets ? access.toolsets.length + " toolset" : "minden toolset"}${access.readOnly ? ", csak olvasás" : ""}.`
+            : undefined
+      : undefined;
     res.type("html").send(
       renderPortal({
         configured: isEntraConfigured(cfg),
         baseUrl: cfg.baseUrl,
-        ...profileSummary(),
+        ...profileSummary(access),
+        accessNote,
         user,
         graphOk,
         graphError,
@@ -314,12 +327,21 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     const oboRef = obo;
     const oid = (claims.oid as string) ?? "";
     if (oid) users.touch(oid, { upn: userFromClaims(claims), name: claims.name as string | undefined }, "mcp");
+    const access = effectiveAccess(oid ? users.get(oid) : undefined, cfg.defaultUserAccess);
+    if (access.blocked) {
+      res.status(403).json({
+        error: "forbidden",
+        error_description: "Az MCP-hozzáférésed le van tiltva ezen a gatewayen. Kérj engedélyt egy gateway-admintól.",
+      });
+      return;
+    }
     const ctx: ToolContext = {
       graph: new GraphClient(() => oboRef.getGraphToken(token)),
       audit,
       user: userFromClaims(claims),
       session: oid || randomUUID(),
       config: cfg,
+      access,
       ...(isSalesforceConfigured(cfg) && oid
         ? {
             salesforce: {
@@ -430,10 +452,16 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
 
   app.get("/admin/api/users", adminAuth, (_req, res) => {
     res.json(
-      users.list().map((u) => ({
-        ...u,
-        salesforce: sfAuth.info(u.oid),
-      }))
+      users.list().map((u) => {
+        const eff = effectiveAccess(u, cfg.defaultUserAccess);
+        return {
+          ...u,
+          access: u.access ?? null,
+          effectiveAccess: eff,
+          effectiveToolCount: eff.blocked ? 0 : allEndpoints.filter((d) => isToolEnabled(d, cfg, eff)).length,
+          salesforce: sfAuth.info(u.oid),
+        };
+      })
     );
   });
 
@@ -446,7 +474,29 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
         res.json({ ok: true, user: u });
         return;
       }
-      res.status(400).json({ error: "Nothing to change (isAdmin expected)." });
+      if ("access" in b) {
+        const a = b.access;
+        if (a === null) {
+          res.json({ ok: true, user: users.setAccess(String(req.params.oid), null, p.upn ?? p.via) });
+          return;
+        }
+        if (!a || typeof a !== "object") throw new Error("access must be an object or null.");
+        const ao = a as Record<string, unknown>;
+        const toolsets =
+          ao.toolsets === null || ao.toolsets === undefined
+            ? null
+            : Array.isArray(ao.toolsets)
+              ? ao.toolsets.filter((t): t is string => typeof t === "string" && (ALL_TOOLSETS as string[]).includes(t))
+              : null;
+        const u = users.setAccess(
+          String(req.params.oid),
+          { toolsets, readOnly: ao.readOnly === true, blocked: ao.blocked === true },
+          p.upn ?? p.via
+        );
+        res.json({ ok: true, user: u });
+        return;
+      }
+      res.status(400).json({ error: "Nothing to change (isAdmin or access expected)." });
     } catch (err) {
       res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
     }
@@ -475,6 +525,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       port: cfg.port,
       readOnly: cfg.readOnly,
       enabledToolsets: cfg.enabledToolsets,
+      defaultUserAccess: cfg.defaultUserAccess,
       defaultPageItems: cfg.defaultPageItems,
       maxPageItems: cfg.maxPageItems,
       maxDownloadBytes: cfg.maxDownloadBytes,
@@ -509,6 +560,13 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
         (t): t is string => typeof t === "string" && (ALL_TOOLSETS as string[]).includes(t)
       );
     }
+    if (b.defaultUserToolsets === null) patch.defaultUserToolsets = null;
+    else if (Array.isArray(b.defaultUserToolsets)) {
+      patch.defaultUserToolsets = b.defaultUserToolsets.filter(
+        (t): t is string => typeof t === "string" && (ALL_TOOLSETS as string[]).includes(t)
+      );
+    }
+    if (typeof b.defaultUserReadOnly === "boolean") patch.defaultUserReadOnly = b.defaultUserReadOnly;
     for (const k of ["defaultPageItems", "maxPageItems", "maxDownloadBytes"] as const) {
       const v = Number(b[k]);
       if (Number.isFinite(v) && v > 0) patch[k] = Math.floor(v);

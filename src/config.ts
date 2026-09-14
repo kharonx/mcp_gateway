@@ -36,6 +36,8 @@ export interface AppConfig {
   baseUrl: string;
   enabledToolsets: string[] | null;
   readOnly: boolean;
+  /** Access profile for users without an individual one (admin UI: "alapértelmezett jogosultság"). */
+  defaultUserAccess: { toolsets: string[] | null; readOnly: boolean };
   defaultPageItems: number;
   maxPageItems: number;
   maxDownloadBytes: number;
@@ -56,6 +58,10 @@ export function loadConfig(argv: string[] = process.argv.slice(2)): AppConfig {
     baseUrl: (process.env.BASE_URL ?? `http://localhost:${num(process.env.PORT, 3000)}`).replace(/\/+$/, ""),
     enabledToolsets: toolsets ? toolsets.split(",").map((s) => s.trim()).filter(Boolean) : null,
     readOnly: (process.env.READ_ONLY ?? "false").toLowerCase() === "true",
+    defaultUserAccess: {
+      toolsets: (process.env.DEFAULT_USER_TOOLSETS ?? "").trim() ? (process.env.DEFAULT_USER_TOOLSETS as string).split(",").map((s) => s.trim()).filter(Boolean) : null,
+      readOnly: (process.env.DEFAULT_USER_READ_ONLY ?? "false").toLowerCase() === "true",
+    },
     defaultPageItems: num(process.env.DEFAULT_PAGE_ITEMS, 50),
     maxPageItems: num(process.env.MAX_PAGE_ITEMS, 500),
     maxDownloadBytes: num(process.env.MAX_DOWNLOAD_BYTES, 10 * 1024 * 1024),

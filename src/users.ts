@@ -7,6 +7,29 @@ import path from "node:path";
  * Admin rights live here too - an admin promotes other already-seen users on
  * the admin "Felhasznalok" tab. ADMIN_KEY remains a bootstrap/fallback only.
  */
+/**
+ * Per-user access profile. `toolsets` is an allowlist applied ON TOP of the
+ * gateway-wide toolset switches (null = every globally enabled toolset);
+ * `readOnly` removes every WRITE tool for this user; `blocked` refuses MCP
+ * calls entirely (the portal and admin UI stay reachable).
+ */
+export interface UserAccess {
+  toolsets: string[] | null;
+  readOnly: boolean;
+  blocked?: boolean;
+  setBy?: string;
+  setAt?: string;
+}
+
+/** Resolve what a user may do: their own profile, or the gateway default for users without one. */
+export function effectiveAccess(
+  user: KnownUser | undefined,
+  defaults: { toolsets: string[] | null; readOnly: boolean }
+): UserAccess {
+  if (user?.access) return user.access;
+  return { toolsets: defaults.toolsets, readOnly: defaults.readOnly };
+}
+
 export interface KnownUser {
   oid: string;
   upn?: string;
@@ -19,6 +42,8 @@ export interface KnownUser {
   isAdmin: boolean;
   adminGrantedBy?: string;
   adminGrantedAt?: string;
+  /** Individual access profile; absent = the gateway default applies. */
+  access?: UserAccess;
 }
 
 export class UserRegistry {
@@ -97,6 +122,24 @@ export class UserRegistry {
     } else {
       delete u.adminGrantedBy;
       delete u.adminGrantedAt;
+    }
+    this.persist(true);
+    return u;
+  }
+
+  /** Set (or with null: clear) a user's individual access profile. */
+  setAccess(oid: string, access: Omit<UserAccess, "setBy" | "setAt"> | null, by: string): KnownUser {
+    const u = this.users.get(oid);
+    if (!u) throw new Error("Unknown user - the user must sign in on the portal (or call the MCP) first.");
+    if (access === null) delete u.access;
+    else {
+      u.access = {
+        toolsets: access.toolsets === null ? null : [...new Set(access.toolsets)],
+        readOnly: !!access.readOnly,
+        ...(access.blocked ? { blocked: true } : {}),
+        setBy: by,
+        setAt: new Date().toISOString(),
+      };
     }
     this.persist(true);
     return u;

@@ -10,6 +10,10 @@
 - MCP `instructions` are GENERATED in `src/server/mcp.ts` (`buildInstructions`) from the enabled toolsets plus
   the newest changelog entry; never hand-edit capability claims there - add a toolset label to `TOOLSET_LABELS`
   when adding a toolset. `get-gateway-info` (toolset `gateway`, always on) returns the same profile to the AI.
+- Per-user access: `KnownUser.access` (`src/users.ts`, edited on the admin "Felhasználók" tab) narrows the
+  gateway-wide profile per user (toolset allowlist, readOnly, blocked); users without one get
+  `cfg.defaultUserAccess` (admin settings). `isToolEnabled(def, cfg, access)` is the single enforcement point,
+  used by the MCP server, the portal and the admin user list; blocked users get 403 on /mcp.
 - Salesforce is optional: tools with `provider: "salesforce"` are registered only when a Connected
   App is configured (admin UI / `SF_CLIENT_ID`); per-user OAuth (PKCE) keyed by Entra oid in
   `data/salesforce-tokens.json`. Reads live in `salesforce.ts` (toolset `salesforce`), writes in

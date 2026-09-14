@@ -4,6 +4,7 @@ import { GraphError } from "../graph/client.js";
 import { SalesforceError } from "../salesforce/client.js";
 import { isSalesforceConfigured } from "../settings.js";
 import type { AppConfig } from "../config.js";
+import type { UserAccess } from "../users.js";
 import { resolveTimeRange, NAMED_RANGES } from "../graph/timeRange.js";
 import { withSource, withSourceList } from "../graph/source.js";
 import { extractContent } from "../content/extract.js";
@@ -240,7 +241,7 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
  * read-only mode, toolset allowlist, and optional providers (Salesforce tools
  * exist only when a Connected App is configured).
  */
-export function isToolEnabled(def: EndpointDef, cfg: AppConfig): boolean {
+export function isToolEnabled(def: EndpointDef, cfg: AppConfig, access?: UserAccess | null): boolean {
   // Gateway self-description is always available (read-only, no provider), so a client can
   // always ask what this build offers even with an explicit toolset allowlist.
   if (def.toolset === "gateway") return true;
@@ -250,12 +251,18 @@ export function isToolEnabled(def: EndpointDef, cfg: AppConfig): boolean {
   // (mirrors Salesforce's own hosted MCP, where "SObject Deletes" is a separately activated server).
   if (def.toolset === "salesforce-delete" && !cfg.enabledToolsets?.includes("salesforce-delete")) return false;
   if (def.provider === "salesforce" && !isSalesforceConfigured(cfg)) return false;
+  // Per-user profile (admin "Felhasználók" tab) narrows the gateway-wide profile further.
+  if (access) {
+    if (access.blocked) return false;
+    if (access.readOnly && (def.write || WRITE_TOOLSETS.includes(def.toolset))) return false;
+    if (access.toolsets && !access.toolsets.includes(def.toolset)) return false;
+  }
   return true;
 }
 
 /** Apply profile filtering (toolsets + read-only + providers) then register everything. */
 export function registerAllTools(server: McpServer, defs: EndpointDef[], ctx: ToolContext): EndpointDef[] {
-  const enabled = defs.filter((d) => isToolEnabled(d, ctx.config));
+  const enabled = defs.filter((d) => isToolEnabled(d, ctx.config, ctx.access));
   for (const def of enabled) registerEndpointTool(server, def, ctx);
   return enabled;
 }
