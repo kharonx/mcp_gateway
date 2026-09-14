@@ -1,6 +1,6 @@
 /** Landing page: Microsoft login, identity self-check, connector onboarding. */
 import type { EndpointDef, Toolset } from "../tools/types.js";
-import { CHANGELOG } from "./changelog.js";
+import { CHANGELOG, buildInfo } from "./changelog.js";
 
 export interface PortalState {
   configured: boolean;
@@ -178,7 +178,7 @@ ${renderNav("/", { minimal: true })}
       : `<p class="fail">A szerver Entra ID beállítása még hiányzik — először az <a href="/admin">admin felületen</a> kell konfigurálni.</p>`
   }
 </main>
-<footer class="muted">av-mcp-gateway v1.0 · <a href="/healthz">Állapot</a></footer>
+<footer class="muted">av-mcp-gateway ${esc(buildInfo().version)} · <a href="/healthz">Állapot</a></footer>
 </body>
 </html>`;
 }
@@ -251,7 +251,7 @@ ${renderTroubleshootCard()}
 ${whatsNewCard}
 </main>
 <footer class="muted">
-  <a href="/ujdonsagok">Újdonságok</a>${u.isAdmin ? ` · <a href="/admin">Admin felület</a>` : ""} · <a href="/healthz">Állapot</a> · av-mcp-gateway v1.0
+  <a href="/ujdonsagok">Újdonságok</a>${u.isAdmin ? ` · <a href="/admin">Admin felület</a>` : ""} · <a href="/healthz">Állapot</a> · av-mcp-gateway ${esc(buildInfo().version)}
   <div>By Botha Levente @alphavet 2026</div>
 </footer>
 </body>

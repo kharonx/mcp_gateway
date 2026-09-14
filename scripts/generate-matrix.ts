@@ -22,7 +22,7 @@ const rows = allEndpoints.map((d) => {
 const byToolset = new Map<string, number>();
 for (const d of allEndpoints) byToolset.set(d.toolset, (byToolset.get(d.toolset) ?? 0) + 1);
 
-const md = `# AV MCP Gateway v1.0 - Tool / Permission Matrix
+const md = `# AV MCP Gateway - Tool / Permission Matrix
 
 > Generated from \`src/tools/endpoints/*.ts\` by \`npm run matrix\`. Do not edit by hand.
 

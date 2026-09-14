@@ -15,14 +15,27 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-/** Version stamp of the running build: the deployed commit is the one stamped on the newest changelog entry. */
+/** Semantic version of the gateway - bump together with package.json. */
+export const APP_VERSION = "1.0.1";
+
+/** Version stamp of the running build: APP_VERSION plus the deployed commit. */
 export function buildInfo(): { version: string; commit: string; date: string } {
   const latest = CHANGELOG[0];
   const commit = (process.env.SOURCE_COMMIT || latest?.commit || "dev").replace(/\+$/, "").slice(0, 7);
-  return { version: `1.0.0+${commit}`, commit, date: latest?.date ?? "" };
+  return { version: `${APP_VERSION}+${commit}`, commit, date: latest?.date ?? "" };
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    date: "2026-09-14",
+    commit: "HEADHASH",
+    title: "Verzió 1.0.1 — frissítés-észlelési teszt",
+    items: [
+      "A gateway verziója 1.0.0-ról 1.0.1-re emelkedett. Ez egy szándékos, funkció nélküli kiadás: azt teszteljük vele, hogy az AI-kliensek (ChatGPT, Claude) észreveszik-e a gateway frissítését a generált bemutatkozó szöveg, a get-gateway-info tool és a verziójel alapján.",
+      "Ha az AI-tól megkérdezed, milyen verzió fut a gatewayen, a helyes válasz: 1.0.1, a legfrissebb commit hash-ével, dátum 2026-09-14.",
+      "A verzió mostantól egyetlen helyen (APP_VERSION) van megadva, a kezdőoldal lábléce, a /healthz és az MCP-szerver neve is innen veszi.",
+    ],
+  },
   {
     date: "2026-09-14",
     commit: "69714a1",
