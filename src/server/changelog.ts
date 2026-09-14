@@ -28,7 +28,7 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-14",
-    commit: "HEADHASH",
+    commit: "80a3345",
     title: "Verzió 1.0.1 — frissítés-észlelési teszt",
     items: [
       "A gateway verziója 1.0.0-ról 1.0.1-re emelkedett. Ez egy szándékos, funkció nélküli kiadás: azt teszteljük vele, hogy az AI-kliensek (ChatGPT, Claude) észreveszik-e a gateway frissítését a generált bemutatkozó szöveg, a get-gateway-info tool és a verziójel alapján.",
