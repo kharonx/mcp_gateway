@@ -25,7 +25,7 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-14",
-    commit: "HEADHASH",
+    commit: "0f5c6f3",
     title: "Az AI könnyebben észreveszi a frissítéseket",
     items: [
       "Az MCP-szerver bemutatkozó szövege (instructions) mostantól a ténylegesen engedélyezett toolkészletekből és a legfrissebb Újdonságok-bejegyzésből generálódik, így minden új beszélgetés elején pontosan azt látja az AI, ami a gatewayen éppen elérhető, és mi változott legutóbb. Eddig ez kézzel írt szöveg volt, ami el tudott csúszni a valóságtól.",
