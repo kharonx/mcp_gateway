@@ -25,7 +25,7 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-14",
-    commit: "HEADHASH",
+    commit: "69714a1",
     title: "Felhasználónkénti jogosultságok az admin felületen",
     items: [
       "Az admin felület Felhasználók fülén minden felhasználóhoz külön beállítható, mely toolseteket használhatja az AI a nevében (a gateway-szintű kapcsolókon belül), tiltható nála minden írás (csak olvasás), vagy letiltható az MCP-hozzáférése teljesen. A táblázat mutatja az egyéni vagy alapértelmezett profilt és a ténylegesen elérhető toolok számát.",
