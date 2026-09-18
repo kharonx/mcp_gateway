@@ -28,7 +28,7 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-18",
-    commit: "HEADHASH",
+    commit: "7676b6b",
     title: "Vectory SQL: közvetlen, csak olvasó lekérdezések a replikán",
     items: [
       "Új, opcionális vectory-sql toolset a Vectory replika (meditrade) és az alphavet adatbázis közvetlen, csak olvasó eléréséhez: vectory-find-customer (név, adószám, VEVOKOD vagy telefonszám-végződés alapján), vectory-customer (ügyfélkártya kontaktokkal, licencszámmal, képviselőkkel), vectory-invoices (számlák sztornó-státusszal, fizetettséggel, dátumszűréssel), vectory-invoice-items (tételek árréssel, szoftver-kategóriával), vectory-customer-software (szoftver-előfizetések, lefedettség vége kategóriánként), vectory-customer-turnover (forgalom és ügyfélszint), vectory-invoice-payment (befizetés dátuma), vectory-product-search (termékek listaárral), ap2-invoices és ap2-invoice-items (AlphaVet-számlák, szállítólevél-tételek), valamint vectory-sql-query egyetlen, ellenőrzött szabad SELECT-hez.",
