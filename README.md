@@ -114,6 +114,16 @@ Csatlakoztatás ChatGPT-ből:
 Claude Desktop / Claude Code: ugyanez az URL remote MCP-ként, vagy lokálisan stdio mód
 (`claude mcp add av-mcp-gateway -- node dist/index.js --stdio`).
 
+## Vectory / AP2 (TT MCP, opcionális)
+
+Toolset `vectory`, provider `tt` (`src/tt/client.ts`, `src/tools/endpoints/tt.ts`): a gateway MCP-kliensként
+csatlakozik a TT MCP-szerverhez (`https://tt.dokiforvet.hu/mcp`, közös `Mcp:ApiKey`), induláskor és a
+beállítások mentésekor lekéri a toollistát, és `tt-` előtaggal (aláhúzás → kötőjel) továbbadja: ügyfélkeresés,
+teljes ügyfélkép, Vectory-számlák/tételek/termékek, AP2-számlák/tételek/ticketek, befizetések, licenc-audit stb.
+Minden TT-tool csak olvasás; a gateway nem éri el közvetlenül a Vectory (meditrade) és az alphavet SQL-t.
+Beállítás: admin felület (URL, kulcs, kapcsolatteszt) vagy env `TT_MCP_URL`, `TT_MCP_API_KEY`. A TT-elérés nem
+személyes jogosultság, ezért a toolsetet a felhasználói jogosultságokkal érdemes szűkíteni.
+
 ## Felhasználói hozzáférési (kilépési) riport
 
 `get-user-access-report` (toolset `users`, csak olvasás): egy felhasználóhoz végigmegy a

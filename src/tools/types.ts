@@ -9,6 +9,7 @@ import type { UserAccess } from "../users.js";
 /** Logical toolsets of the Reporting profile (spec section 24). */
 export type Toolset =
   | "gateway"
+  | "vectory"
   | "salesforce"
   | "salesforce-write"
   | "salesforce-delete"
@@ -50,7 +51,7 @@ export interface EndpointDef {
   toolset: Toolset;
   write?: boolean;
   /** Data source. Default "graph" (Microsoft Graph); "salesforce" tools run through the caller's own Salesforce connection. */
-  provider?: "graph" | "salesforce" | "gateway";
+  provider?: "graph" | "salesforce" | "gateway" | "tt";
   /** Custom implementation (non-Graph providers). Receives validated inputs and the tool context. */
   handler?: (args: Record<string, any>, ctx: ToolContext) => Promise<unknown>;
   /** Delegated Graph scopes used by this tool (documentation + matrix). */

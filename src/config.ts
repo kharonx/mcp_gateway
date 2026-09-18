@@ -20,6 +20,14 @@ export interface SalesforceConfig {
   apiVersion: string;
 }
 
+/** Optional TT MCP server (Vectory / AP2 / Alphaportal, read-only). Empty url or apiKey = integration off. */
+export interface TtConfig {
+  url: string;
+  apiKey: string;
+}
+
+export const TT_DEFAULTS = { url: "https://tt.dokiforvet.hu/mcp" };
+
 export const SALESFORCE_DEFAULTS = {
   loginUrl: "https://login.salesforce.com",
   scopes: "api refresh_token",
@@ -28,6 +36,7 @@ export const SALESFORCE_DEFAULTS = {
 
 export interface AppConfig {
   salesforce: SalesforceConfig;
+  tt: TtConfig;
   tenantId: string;
   clientId: string;
   clientSecret: string;
@@ -67,6 +76,10 @@ export function loadConfig(argv: string[] = process.argv.slice(2)): AppConfig {
     maxDownloadBytes: num(process.env.MAX_DOWNLOAD_BYTES, 10 * 1024 * 1024),
     auditDir: path.resolve(process.env.AUDIT_DIR ?? "./logs"),
     adminKey: process.env.ADMIN_KEY ?? "",
+    tt: {
+      url: (process.env.TT_MCP_URL || TT_DEFAULTS.url).replace(/\/+$/, ""),
+      apiKey: process.env.TT_MCP_API_KEY ?? "",
+    },
     salesforce: {
       clientId: process.env.SF_CLIENT_ID ?? "",
       clientSecret: process.env.SF_CLIENT_SECRET ?? "",

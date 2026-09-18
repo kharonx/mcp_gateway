@@ -10,6 +10,7 @@ import { CHANGELOG, buildInfo } from "./changelog.js";
 /** Short label per toolset for the generated instructions. */
 const TOOLSET_LABELS: Record<Toolset, string> = {
   gateway: "gateway self-description (get-gateway-info)",
+  vectory: "TT - Vectory / AP2 / Alphaportal: customer search, customer 360, Vectory invoices and items, AP2 invoices and tickets, payments, licence audit (read-only, via the TT MCP server; start with tt-ugyfel-kereses)",
   mail: "Outlook mail - read",
   "shared-mail": "shared mailboxes - read",
   "mail-write": "Outlook mail - draft/send/reply/forward (WRITE)",
@@ -76,13 +77,14 @@ STALE TOOL LISTS: clients cache tools/list when they connect, so the tool list y
 - All list tools paginate automatically (maxItems). When a response says truncated=true, call the same tool again with cursor=nextCursor - repeat until truncated=false to enumerate large collections.`;
 }
 
-export function buildMcpServer(ctx: ToolContext): { server: McpServer; enabled: EndpointDef[] } {
-  const enabledDefs = allEndpoints.filter((d) => isToolEnabled(d, ctx.config, ctx.access));
+export function buildMcpServer(ctx: ToolContext, extraDefs: EndpointDef[] = []): { server: McpServer; enabled: EndpointDef[] } {
+  const defs = [...allEndpoints, ...extraDefs];
+  const enabledDefs = defs.filter((d) => isToolEnabled(d, ctx.config, ctx.access));
   const fullCtx: ToolContext = { ...ctx, enabledTools: enabledDefs };
   const server = new McpServer(
     { name: "av-mcp-gateway", version: buildInfo().version },
     { capabilities: { tools: {} }, instructions: buildInstructions(enabledDefs, fullCtx) }
   );
-  const enabled = registerAllTools(server, allEndpoints, fullCtx);
+  const enabled = registerAllTools(server, defs, fullCtx);
   return { server, enabled };
 }

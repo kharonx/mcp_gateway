@@ -19,6 +19,8 @@ export interface PortalState {
   salesforceDelete?: boolean;
   /** One-line note about the signed-in user's access profile (individual or default restriction). */
   accessNote?: string;
+  /** Present only when the optional TT MCP (Vectory / AP2) integration is configured. */
+  tt?: { configured: boolean; toolCount: number; error?: string };
   /** Present only when the optional Salesforce Connected App is configured. */
   salesforce?: {
     connected: boolean;
@@ -32,7 +34,7 @@ export interface PortalState {
 
 /** One integrated platform as shown on the landing page. */
 export interface PlatformCapabilities {
-  key: "m365" | "salesforce";
+  key: "m365" | "salesforce" | "tt";
   name: string;
   /** How the AI gets access on this platform (login model). */
   access: string;
@@ -123,8 +125,25 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): { platforms: Plat
     });
   }
 
+  // --- TT: Vectory / AP2 / Alphaportal ---------------------------------------
+  if (on.has("vectory")) {
+    platforms.push({
+      key: "tt",
+      name: "Vectory / AP2 (TT)",
+      access: "A gateway a TT MCP-szerveren keresztül, közös TT API-kulccsal éri el — ez nem személyes jogosultság, ezért az admin dönti el, ki kapja meg a vectory toolsetet. Minden hívás naplózva a te neveddel.",
+      read: [
+        "Ügyfélkeresés név, település, Vectory-kód, adószám, e-mail vagy telefon alapján; teljes ügyfélkép egy hívással (adatlap, jegyzetek, Vectory, AP2-számlák, ticketek, hívások, változásnapló, befizetések)",
+        "Vectory: ügyféladatok, tartozás, kimenő számlák sztornó-státusszal, számlatételek, termékek, befizetések",
+        "AP2: AlphaVet-számlák és tételek, Alphaportal ticketek és kommentek",
+        "Egyéb TT-adatok: WenzTool hívások, változásnapló, lejáró fordulónapok, licenc-audit, ügyfélstatisztika, csapatjegyzetek",
+      ],
+      write: [],
+      readOnlyNote: "Csak olvasás: a TT MCP kizárólag lekérdező toolokat ad, a Vectory és az AP2 adatbázisába a gateway nem ír.",
+    });
+  }
+
   // Future-proofing: any toolset without a curated line above still shows up.
-  const covered: Toolset[] = ["gateway", "mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write", "salesforce-delete"];
+  const covered: Toolset[] = ["gateway", "mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write", "salesforce-delete", "vectory"];
   for (const t of on) {
     if (covered.includes(t)) continue;
     const reads = enabledDefs.filter((d) => d.toolset === t && !d.write).length;
@@ -216,6 +235,7 @@ function renderSignedIn(s: PortalState): string {
     <p class="muted">A Microsoft-fiókoddal, delegált Graph-hozzáféréssel. Külön összekötés nem kell.</p>
   </div>
   ${renderSalesforceTile(s)}
+  ${renderTtTile(s)}
 </section>`;
 
   const latest = CHANGELOG[0];
@@ -256,6 +276,15 @@ ${whatsNewCard}
 </footer>
 </body>
 </html>`;
+}
+
+function renderTtTile(s: PortalState): string {
+  if (!s.tt?.configured) return "";
+  return `
+  <div class="tile">
+    <div class="tile-head"><span class="ico tt">V</span><b>Vectory / AP2</b>${s.tt.error ? `<span class="pill">hiba</span>` : `<span class="pill ok">bekötve</span>`}</div>
+    <p class="muted">A TT MCP-szerveren keresztül, közös kulccsal — külön összekötés nem kell. ${s.tt.error ? `Jelenleg nem elérhető: ${esc(s.tt.error)}` : `${s.tt.toolCount} lekérdező tool (ügyfél, számlák, tételek, ticketek), csak olvasás.`}</p>
+  </div>`;
 }
 
 function renderSalesforceTile(s: PortalState): string {
@@ -303,7 +332,7 @@ function renderAccessCard(s: PortalState): string {
 
 /** One platform block inside the access card. */
 function renderPlatformCapabilities(p: PlatformCapabilities): string {
-  const ico = p.key === "salesforce" ? `<span class="ico sf">S</span>` : `<span class="ico m365">M</span>`;
+  const ico = p.key === "salesforce" ? `<span class="ico sf">S</span>` : p.key === "tt" ? `<span class="ico tt">V</span>` : `<span class="ico m365">M</span>`;
   return `
   <div class="platform">
     <h3>${ico}${esc(p.name)}</h3>
@@ -482,7 +511,7 @@ export const PORTAL_STYLE = `<style>
   .tile-head b { font-family: "Archivo", sans-serif; font-size: 1rem; }
   .tile-head .pill { margin-left: auto; }
   .ico { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; color: #fff; font-family: "Archivo", sans-serif; font-weight: 700; font-size: .75rem; flex: none; }
-  .ico.m365 { background: var(--m365); } .ico.sf { background: var(--sf); }
+  .ico.m365 { background: var(--m365); } .ico.sf { background: var(--sf); } .ico.tt { background: #5b3fa0; }
   .pill { display: inline-block; font-family: "Archivo", sans-serif; font-size: .7rem; font-weight: 600; letter-spacing: .04em; padding: .1rem .5rem; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
   .pill.ok { background: var(--ok-soft); color: var(--ok); }
   .pill.gate { background: var(--gate-soft); color: var(--gate); text-transform: none; letter-spacing: 0; }

@@ -146,6 +146,18 @@ export const ADMIN_HTML = `<!doctype html>
     <div style="margin-top:.6rem"><button class="sec" onclick="testSalesforce()">Salesforce kapcsolat tesztelése</button> <span id="s-sfmsg" class="msg"></span></div>
     <ul id="s-sfchecks" class="muted" style="margin:.4rem 0 0; padding-left:1.2rem"></ul>
   </fieldset>
+  <fieldset>
+    <legend>TT MCP — Vectory / AP2 (opcionális)</legend>
+    <p class="muted" style="margin-top:0">Ha kitöltöd, megjelenik a <code>vectory</code> toolset: a TT MCP-szerver (tt.dokiforvet.hu) tooljai a gatewayen keresztül —
+    ügyfélkeresés, teljes ügyfélkép, Vectory-számlák és tételek, AP2-számlák, Alphaportal ticketek, befizetések, licenc-audit. <b>Csak olvasás.</b>
+    A TT-t közös API-kulccsal éri el a gateway (nem személyes jogosultság), ezért a toolsetet a Felhasználók fülön érdemes név szerint kiosztani.
+    A toollista a TT-ről töltődik be induláskor és mentéskor. Üresen hagyott kulcs = integráció kikapcsolva.</p>
+    <label class="f">TT MCP URL <input type="text" id="s-ttUrl" placeholder="https://tt.dokiforvet.hu/mcp"></label>
+    <label class="f">TT API-kulcs (Mcp:ApiKey) <input type="password" id="s-ttKey" placeholder="(változatlan, ha üresen hagyod)"></label>
+    <div class="pill" id="s-ttState">–</div>
+    <div style="margin-top:.6rem"><button class="sec" onclick="testTt()">TT kapcsolat tesztelése</button> <span id="s-ttmsg" class="msg"></span></div>
+    <div id="s-tttools" class="muted" style="margin-top:.4rem; font-size:.8rem"></div>
+  </fieldset>
   <button class="primary" onclick="saveSettings()">Mentés</button>
   <button class="sec" onclick="testConnection()">Entra kapcsolat tesztelése</button>
   <span id="s-msg" class="msg"></span>
@@ -272,6 +284,15 @@ async function disconnectSf(oid){
   try { await api('/admin/api/users/' + encodeURIComponent(oid) + '/salesforce', { method: 'DELETE' }); await loadUsers(); }
   catch(e){ alert('Hiba: ' + e.message); }
 }
+async function testTt(){
+  const m = document.getElementById('s-ttmsg');
+  m.textContent = 'Tesztelés…'; m.className = 'msg muted';
+  try { const r = await api('/admin/api/test-tt', { method: 'POST', body: '{}' });
+    m.textContent = (r.ok ? '✓ ' : '✗ ') + r.message; m.className = 'msg ' + (r.ok ? 'ok' : 'fail');
+    document.getElementById('s-tttools').textContent = (r.tools || []).join(', ');
+    await loadTools();
+  } catch(e){ m.textContent = 'Hiba: ' + e.message; m.className = 'msg fail'; }
+}
 async function testSalesforce(){
   const m = document.getElementById('s-sfmsg'); const ul = document.getElementById('s-sfchecks');
   m.textContent = 'Tesztelés…'; m.className = 'msg muted'; ul.innerHTML = '';
@@ -306,6 +327,11 @@ async function loadSettings(){
   document.getElementById('s-sfCallback').value = sf.callbackUrl || '–';
   document.getElementById('s-sfUsers').textContent = sf.connectedUsers || 0;
   document.getElementById('s-sfState').textContent = sf.configured ? 'Salesforce toolset aktív ✓' : 'Salesforce integráció kikapcsolva';
+  const tt = s.tt || {};
+  document.getElementById('s-ttUrl').value = tt.url || '';
+  document.getElementById('s-ttKey').placeholder = tt.apiKeySet ? '******** (változatlan, ha üresen hagyod)' : 'Mcp:ApiKey';
+  document.getElementById('s-ttState').textContent = !tt.configured ? 'TT integráció kikapcsolva' : tt.error ? 'TT hiba: ' + tt.error : 'vectory toolset aktív ✓ (' + (tt.toolCount||0) + ' tool)';
+  document.getElementById('s-tttools').textContent = (tt.tools || []).join(', ');
   TOOLSETS_AVAILABLE = s.toolsetsAvailable || [];
   renderToolsetChecks(document.getElementById('s-toolsets'), 'ts', s.enabledToolsets || []);
   const dua = s.defaultUserAccess || { toolsets: null, readOnly: false };
@@ -333,12 +359,15 @@ async function saveSettings(){
     salesforceLoginUrl: document.getElementById('s-sfLoginUrl').value,
     salesforceScopes: document.getElementById('s-sfScopes').value,
     salesforceApiVersion: document.getElementById('s-sfApiVersion').value,
+    ttMcpUrl: document.getElementById('s-ttUrl').value,
+    ttMcpApiKey: document.getElementById('s-ttKey').value,
   };
   const m = document.getElementById('s-msg');
   try { await api('/admin/api/settings', { method: 'PUT', body: JSON.stringify(body) });
     m.textContent = 'Mentve ✓'; m.className = 'msg ok';
     document.getElementById('s-clientSecret').value = '';
     document.getElementById('s-sfClientSecret').value = '';
+    document.getElementById('s-ttKey').value = '';
     await loadSettings(); await loadTools();
   } catch(e){ m.textContent = 'Hiba: ' + e.message; m.className = 'msg fail'; }
 }

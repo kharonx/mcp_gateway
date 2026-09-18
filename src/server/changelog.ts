@@ -28,6 +28,17 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-18",
+    commit: "HEADHASH",
+    title: "Új platform: Vectory / AP2 a TT MCP-szerveren keresztül",
+    items: [
+      "Új, opcionális vectory toolset: a TT MCP-szerver (tt.dokiforvet.hu) tooljai a gatewayen keresztül is elérhetők — ügyfélkeresés név, település, Vectory-kód, adószám, e-mail vagy telefon alapján, teljes ügyfélkép egy hívással, Vectory-számlák és tételek sztornó-státusszal, termékek, AP2 (AlphaVet) számlák és tételek, Alphaportal ticketek és kommentek, befizetések, lejáró fordulónapok, licenc-audit, ügyfélstatisztika, csapatjegyzetek. A toolok tt- előtaggal jelennek meg (pl. tt-ugyfel-kereses); a menet mindig ügyfélkereséssel kezdődik, a kapott clinicId-vel jönnek a többiek.",
+      "Csak olvasás: a gateway nem nyúl a Vectory (meditrade) és az alphavet adatbázishoz, mindent a TT MCP lekérdező tooljain keresztül kér; írás nincs.",
+      "Beállítás az admin felületen (TT MCP URL és API-kulcs, kapcsolatteszt); a toollista a TT-ről töltődik be induláskor és mentéskor, így követi, amit a TT közzétesz. A TT-elérés közös kulccsal történik, nem személyes jogosultság, ezért a vectory toolsetet a Felhasználók fülön érdemes név szerint kiosztani; minden hívás a hívó nevével kerül az auditnaplóba.",
+      "A kezdőoldalon új Vectory / AP2 csempe és a „Mihez fér hozzá az AI” blokkban külön platform-szakasz; a get-gateway-info és a generált bemutatkozó szöveg is mutatja a toolsetet.",
+    ],
+  },
+  {
+    date: "2026-09-18",
     commit: "d64b722",
     title: "Felhasználói hozzáférési (kilépési) riport",
     items: [

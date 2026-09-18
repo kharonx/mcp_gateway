@@ -13,14 +13,17 @@ import { renderPortal, buildCapabilities, renderNav, renderHead } from "./portal
 import { renderChangelogPage, buildInfo } from "./changelog.js";
 import { effectiveAccess, type UserAccess } from "../users.js";
 import { allEndpoints } from "../tools/endpoints/all.js";
+import { loadTtEndpoints } from "../tools/endpoints/tt.js";
+import type { EndpointDef } from "../tools/types.js";
 import { isToolEnabled } from "../tools/registry.js";
 import type { Toolset, ToolContext } from "../tools/types.js";
-import { SettingsStore, isEntraConfigured, isSalesforceConfigured, type MutableSettings } from "../settings.js";
+import { SettingsStore, isEntraConfigured, isSalesforceConfigured, isTtConfigured, type MutableSettings } from "../settings.js";
 import { SalesforceAuth } from "../salesforce/auth.js";
 import { UserRegistry } from "../users.js";
 import type { AppConfig } from "../config.js";
 
 const ALL_TOOLSETS: Toolset[] = [
+  "vectory",
   "salesforce",
   "salesforce-write",
   "salesforce-delete",
@@ -97,6 +100,28 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
   }
   applySettings();
 
+  // TT (Vectory / AP2) tools are discovered from the TT MCP server; re-read on settings changes.
+  let ttEndpoints: EndpointDef[] = [];
+  let ttError: string | undefined;
+  async function refreshTt(): Promise<void> {
+    if (!isTtConfigured(cfg)) {
+      ttEndpoints = [];
+      ttError = undefined;
+      return;
+    }
+    try {
+      ttEndpoints = await loadTtEndpoints(cfg.tt);
+      ttError = undefined;
+      console.log(`  TT MCP       : ${ttEndpoints.length} tools from ${cfg.tt.url}`);
+    } catch (err) {
+      ttEndpoints = [];
+      ttError = err instanceof Error ? err.message : String(err);
+      console.error(`TT MCP tool discovery failed: ${ttError}`);
+    }
+  }
+  void refreshTt();
+  const currentEndpoints = (): EndpointDef[] => [...allEndpoints, ...ttEndpoints];
+
   const oauthProxy = new OAuthProxy(() => cfg, path.resolve("data"));
   // Optional Salesforce: per-user OAuth connections keyed by Entra oid.
   const sfAuth = new SalesforceAuth(() => cfg, path.resolve("data"));
@@ -136,7 +161,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     return { sid, sess };
   };
   const profileSummary = (access?: UserAccess) => {
-    const enabled = allEndpoints.filter((d) => isToolEnabled(d, cfg, access));
+    const enabled = currentEndpoints().filter((d) => isToolEnabled(d, cfg, access));
     return {
       toolCount: enabled.length,
       writeToolCount: enabled.filter((d) => d.write).length,
@@ -353,7 +378,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
         : {}),
     };
 
-    const { server } = buildMcpServer(ctx);
+    const { server } = buildMcpServer(ctx, ttEndpoints);
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on("close", () => {
       transport.close();
@@ -458,7 +483,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
           ...u,
           access: u.access ?? null,
           effectiveAccess: eff,
-          effectiveToolCount: eff.blocked ? 0 : allEndpoints.filter((d) => isToolEnabled(d, cfg, eff)).length,
+          effectiveToolCount: eff.blocked ? 0 : currentEndpoints().filter((d) => isToolEnabled(d, cfg, eff)).length,
           salesforce: sfAuth.info(u.oid),
         };
       })
@@ -507,6 +532,16 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     res.json({ ok: true });
   });
 
+  app.post("/admin/api/test-tt", adminAuth, async (_req, res) => {
+    if (!isTtConfigured(cfg)) {
+      res.json({ ok: false, message: "A TT MCP URL vagy az API-kulcs hiányzik." });
+      return;
+    }
+    await refreshTt();
+    if (ttError) res.json({ ok: false, message: ttError });
+    else res.json({ ok: true, message: `${ttEndpoints.length} tool elérhető a TT MCP-szerveren`, tools: ttEndpoints.map((d) => d.name) });
+  });
+
   app.post("/admin/api/test-salesforce", adminAuth, async (req, res) => {
     const { sess } = getSession(req);
     try {
@@ -533,6 +568,14 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       configured: isEntraConfigured(cfg),
       registeredMcpClients: oauthProxy.registeredClientCount(),
       redirectUri: `${cfg.baseUrl}/auth/callback`,
+      tt: {
+        url: cfg.tt.url,
+        apiKeySet: !!cfg.tt.apiKey,
+        configured: isTtConfigured(cfg),
+        toolCount: ttEndpoints.length,
+        tools: ttEndpoints.map((d) => d.name),
+        error: ttError,
+      },
       salesforce: {
         clientId: cfg.salesforce.clientId,
         clientSecretSet: !!cfg.salesforce.clientSecret,
@@ -546,7 +589,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     });
   });
 
-  app.put("/admin/api/settings", adminAuth, (req, res) => {
+  app.put("/admin/api/settings", adminAuth, async (req, res) => {
     const b = (req.body ?? {}) as Record<string, unknown>;
     const patch: MutableSettings = {};
     if (typeof b.tenantId === "string") patch.tenantId = b.tenantId.trim();
@@ -608,9 +651,19 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     if (typeof b.salesforceApiVersion === "string" && /^(v\d+\.\d+)?$/.test(b.salesforceApiVersion.trim())) {
       patch.salesforceApiVersion = b.salesforceApiVersion.trim();
     }
+    if (typeof b.ttMcpUrl === "string") {
+      const raw = b.ttMcpUrl.trim();
+      if (raw && !/^https:\/\/[^\s]+$/i.test(raw)) {
+        res.status(400).json({ error: "Érvénytelen TT MCP URL: https://... formátum kell (pl. https://tt.dokiforvet.hu/mcp)." });
+        return;
+      }
+      patch.ttMcpUrl = raw;
+    }
+    if (typeof b.ttMcpApiKey === "string") patch.ttMcpApiKey = b.ttMcpApiKey.trim();
     store.save(patch);
     applySettings();
-    res.json({ ok: true, configured: isEntraConfigured(cfg) });
+    await refreshTt();
+    res.json({ ok: true, configured: isEntraConfigured(cfg), tt: { configured: isTtConfigured(cfg), toolCount: ttEndpoints.length, error: ttError } });
   });
 
   // Validates tenant/client/secret with a client-credentials token request.
@@ -646,14 +699,14 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
   });
 
   app.get("/admin/api/tools", adminAuth, (_req, res) => {
-    const tools = allEndpoints
+    const tools = currentEndpoints()
       .filter((d) => isToolEnabled(d, cfg))
       .map((d) => ({
         name: d.name,
         toolset: d.toolset,
         write: !!d.write,
         method: d.method,
-        path: d.provider === "salesforce" ? `Salesforce ${d.path}` : d.path,
+        path: d.provider === "salesforce" ? `Salesforce ${d.path}` : d.provider === "tt" ? `TT MCP ${d.path}` : d.path,
         scopes: d.scopes,
         description: d.description,
       }));

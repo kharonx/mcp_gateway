@@ -14,6 +14,10 @@
   gateway-wide profile per user (toolset allowlist, readOnly, blocked); users without one get
   `cfg.defaultUserAccess` (admin settings). `isToolEnabled(def, cfg, access)` is the single enforcement point,
   used by the MCP server, the portal and the admin user list; blocked users get 403 on /mcp.
+- TT / Vectory / AP2 is optional: toolset `vectory`, provider `tt`. The gateway is an MCP *client* of the TT
+  server (`src/tt/client.ts`, shared API key from admin settings / `TT_MCP_API_KEY`); tools are discovered at
+  runtime (`loadTtEndpoints`, re-run on settings save) and passed to `buildMcpServer(ctx, extra)`. Never add
+  direct SQL access to meditrade/alphavet here - read-only TT tools only.
 - Salesforce is optional: tools with `provider: "salesforce"` are registered only when a Connected
   App is configured (admin UI / `SF_CLIENT_ID`); per-user OAuth (PKCE) keyed by Entra oid in
   `data/salesforce-tokens.json`. Reads live in `salesforce.ts` (toolset `salesforce`), writes in

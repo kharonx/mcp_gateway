@@ -26,6 +26,9 @@ export interface MutableSettings {
   salesforceLoginUrl?: string;
   salesforceScopes?: string;
   salesforceApiVersion?: string;
+  /** Optional TT MCP server (Vectory / AP2). */
+  ttMcpUrl?: string;
+  ttMcpApiKey?: string;
 }
 
 export class SettingsStore {
@@ -51,7 +54,7 @@ export class SettingsStore {
     const next: MutableSettings = { ...this.settings };
     for (const [k, v] of Object.entries(patch) as [keyof MutableSettings, unknown][]) {
       if (v === undefined) continue;
-      if ((k === "clientSecret" || k === "salesforceClientSecret") && v === "") continue; // masked in UI - keep stored value
+      if ((k === "clientSecret" || k === "salesforceClientSecret" || k === "ttMcpApiKey") && v === "") continue; // masked in UI - keep stored value
       (next as Record<string, unknown>)[k] = v;
     }
     this.settings = next;
@@ -83,8 +86,17 @@ export class SettingsStore {
         scopes: s.salesforceScopes || base.salesforce.scopes,
         apiVersion: s.salesforceApiVersion || base.salesforce.apiVersion,
       },
+      tt: {
+        url: (s.ttMcpUrl || base.tt.url).replace(/\/+$/, ""),
+        apiKey: s.ttMcpApiKey ?? base.tt.apiKey,
+      },
     };
   }
+}
+
+/** TT (Vectory / AP2) is optional: its toolset exists only with a URL and an API key. */
+export function isTtConfigured(cfg: AppConfig): boolean {
+  return !!(cfg.tt.url && cfg.tt.apiKey);
 }
 
 export function isEntraConfigured(cfg: AppConfig): boolean {
