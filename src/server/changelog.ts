@@ -28,7 +28,7 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-18",
-    commit: "HEADHASH",
+    commit: "d64b722",
     title: "Felhasználói hozzáférési (kilépési) riport",
     items: [
       "Új tool: get-user-access-report. Egy felhasználóhoz (UPN vagy azonosító) összegyűjti: címtárszerepek, csoport- és Teams-tagságok (közvetlen vagy örökölt, tulajdonos vagy tag), a csoportokhoz tartozó SharePoint-oldalak, majd a hívó által látható SharePoint-oldalakon végigmegy a dokumentumtárakon és mappákon, és minden megosztott elemnél megnézi, hogy a felhasználó közvetlenül, csoporton keresztül vagy szervezeti/anonim linkkel fér-e hozzá, jelölve, hogy a jog örökölt vagy közvetlen.",
