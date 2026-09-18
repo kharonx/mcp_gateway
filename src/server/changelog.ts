@@ -28,7 +28,7 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-18",
-    commit: "HEADHASH",
+    commit: "7215f7c",
     title: "Új platform: Vectory / AP2 a TT MCP-szerveren keresztül",
     items: [
       "Új, opcionális vectory toolset: a TT MCP-szerver (tt.dokiforvet.hu) tooljai a gatewayen keresztül is elérhetők — ügyfélkeresés név, település, Vectory-kód, adószám, e-mail vagy telefon alapján, teljes ügyfélkép egy hívással, Vectory-számlák és tételek sztornó-státusszal, termékek, AP2 (AlphaVet) számlák és tételek, Alphaportal ticketek és kommentek, befizetések, lejáró fordulónapok, licenc-audit, ügyfélstatisztika, csapatjegyzetek. A toolok tt- előtaggal jelennek meg (pl. tt-ugyfel-kereses); a menet mindig ügyfélkereséssel kezdődik, a kapott clinicId-vel jönnek a többiek.",
