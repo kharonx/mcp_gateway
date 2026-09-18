@@ -68,7 +68,7 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): { platforms: Plat
   if (drives.length) m365Read.push(`${drives.join(" és ")}: fájlok, mappák, listák, keresés és letöltés (Word, Excel, PDF tartalom szövegként)`);
   const notes = [on.has("onenote") ? "OneNote" : null, on.has("loop") ? "Loop" : null].filter(Boolean);
   if (notes.length) m365Read.push(`${notes.join(" és ")}: jegyzetfüzetek, szakaszok, oldalak és komponensek`);
-  if (on.has("users")) m365Read.push("Címtár: Microsoft 365 felhasználók, személyek, szervezeti adatok");
+  if (on.has("users")) m365Read.push("Címtár: Microsoft 365 felhasználók, személyek, szervezeti adatok, valamint felhasználói hozzáférési (kilépési) riport: csoport- és Teams-tagságok, SharePoint-oldalak, megosztott mappák/fájlok és megosztási linkek egy felhasználóhoz");
   if (on.has("search")) m365Read.push("Több forrást átfogó Microsoft 365-keresés (levél, fájl, esemény, chat egy lekérdezéssel)");
 
   const m365Write: string[] = [];

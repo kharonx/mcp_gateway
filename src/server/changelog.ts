@@ -27,6 +27,17 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-09-18",
+    commit: "HEADHASH",
+    title: "Felhasználói hozzáférési (kilépési) riport",
+    items: [
+      "Új tool: get-user-access-report. Egy felhasználóhoz (UPN vagy azonosító) összegyűjti: címtárszerepek, csoport- és Teams-tagságok (közvetlen vagy örökölt, tulajdonos vagy tag), a csoportokhoz tartozó SharePoint-oldalak, majd a hívó által látható SharePoint-oldalakon végigmegy a dokumentumtárakon és mappákon, és minden megosztott elemnél megnézi, hogy a felhasználó közvetlenül, csoporton keresztül vagy szervezeti/anonim linkkel fér-e hozzá, jelölve, hogy a jog örökölt vagy közvetlen.",
+      "A riport tartalmazza a felhasználó saját OneDrive-járól másokkal megosztott elemeket, és — ahol a Graph engedi — a vele megosztott elemeket (sharedWithMe, Insights). Minden futás a hívó saját jogosultságával történik: csak az általa olvasható oldalak kerülnek átvizsgálásra.",
+      "Korlátok a riportban jelölve: a klasszikus SharePoint-oldalcsoportok (Owners/Members/Visitors) tagságát a Graph delegált jogosultsággal nem adja ki, ezek „feloldatlan oldalcsoport” listában jelennek meg; csak a megosztási rekorddal rendelkező elemek kerülnek jogosultság-ellenőrzésre; a futás siteSearch, maxSites, maxItemsPerDrive és maxDepth paraméterekkel szűkíthető, a statisztika és a csonkolás jelzi, mi maradt ki.",
+      "Nem kell új Entra-jogosultság: a meglévő Directory.Read.All, Sites.Read.All, Files.Read.All és Team.ReadBasic.All scope-okkal fut.",
+    ],
+  },
+  {
     date: "2026-09-14",
     commit: "80a3345",
     title: "Verzió 1.0.1 — frissítés-észlelési teszt",

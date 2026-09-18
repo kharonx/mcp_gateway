@@ -24,7 +24,7 @@ const TOOLSET_LABELS: Record<Toolset, string> = {
   onedrive: "OneDrive - read",
   loop: "Loop components - read",
   search: "cross-source Microsoft 365 search",
-  users: "directory users, people, audit log - read",
+  users: "directory users, people, audit log, per-user access/offboarding report (get-user-access-report) - read",
   salesforce: "Salesforce - SOQL/SOSL, describe, records, account overview, reports (read, via the user's OWN linked Salesforce login)",
   "salesforce-write": "Salesforce - create/update record, task, event, Chatter post, note (WRITE, confirm=true, records appear under the user's name)",
   "salesforce-delete": "Salesforce - delete ONE record to the Recycle Bin (WRITE, opt-in toolset, confirm=true per record, name the record to the user first)",

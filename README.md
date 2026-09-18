@@ -114,6 +114,19 @@ Csatlakoztatás ChatGPT-ből:
 Claude Desktop / Claude Code: ugyanez az URL remote MCP-ként, vagy lokálisan stdio mód
 (`claude mcp add av-mcp-gateway -- node dist/index.js --stdio`).
 
+## Felhasználói hozzáférési (kilépési) riport
+
+`get-user-access-report` (toolset `users`, csak olvasás): egy felhasználóhoz végigmegy a
+címtárszerepeken, csoport- és Teams-tagságokon (közvetlen/örökölt, tulajdonos/tag), a csoportokhoz
+kötött SharePoint-oldalakon, majd a hívó által látható oldalakon a dokumentumtár → mappa → fájl
+láncon; a megosztási rekorddal rendelkező elemeknél minden jogosultságot és megosztási linket a
+felhasználóhoz illeszt (közvetlen, csoporton át, szervezeti/anonim link; örökölt vagy közvetlen).
+Hozzáteszi a felhasználó OneDrive-járól másokkal megosztott elemeket és — ahol a Graph engedi — a
+vele megosztottakat. Paraméterek: `siteSearch`, `maxSites`, `maxItemsPerDrive`, `maxDepth`,
+`includeOneDrive`, `includeSharedWithUser`. A válasz `stats`, `truncated`, `errors` és `notes`
+mezői mutatják, mi maradt ki. Ismert korlát: a klasszikus SharePoint-oldalcsoportok tagsága
+Graph-ból nem látszik, ezek `unresolvedSiteGroups` alatt jelennek meg.
+
 ## Adminok és felhasználók
 
 - **Admin = bejelentkezett Microsoft-felhasználó admin joggal.** A `/admin` felület a kezdőoldali

@@ -7,9 +7,9 @@ Principle: **read broadly, write narrowly** - the WRITE surface is Outlook mail
 Salesforce Connected App is configured - Salesforce activity/record writes. Every
 outbound send and every Salesforce write is gated by `confirm=true`.
 
-Total tools: **122** (24 WRITE, 98 READ)
+Total tools: **123** (24 WRITE, 99 READ)
 
-Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (5), salesforce (11), salesforce-write (6), salesforce-delete (1)
+Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (6), salesforce (11), salesforce-write (6), salesforce-delete (1)
 
 | MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -117,6 +117,7 @@ Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-wr
 | `get-user-account-status-history` | users | READ | GET | `/auditLogs/directoryAudits` | AuditLog.Read.All, Directory.Read.All | enabled | paginated, time-range, search |
 | `list-directory-audits` | users | READ | GET | `/auditLogs/directoryAudits` | AuditLog.Read.All, Directory.Read.All | enabled | paginated, time-range |
 | `search-users` | users | READ | GET | `/users` | User.Read.All | enabled | paginated, search |
+| `get-user-access-report` | users | READ | GET | `/users/{user}/access-report` | Directory.Read.All, Sites.Read.All, Files.Read.All, Team.ReadBasic.All | enabled |  |
 | `salesforce-connection-status` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/limits` | Salesforce: api | optional (Connected App configured) |  |
 | `salesforce-soql-query` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/query` | Salesforce: api | optional (Connected App configured) | paginated |
 | `salesforce-sosl-search` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/search` | Salesforce: api | optional (Connected App configured) |  |
