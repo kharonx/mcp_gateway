@@ -21,6 +21,8 @@ export interface PortalState {
   accessNote?: string;
   /** Present only when the optional TT MCP (Vectory / AP2) integration is configured. */
   tt?: { configured: boolean; toolCount: number; error?: string };
+  /** Present when the direct Vectory SQL (read-only) integration is configured. */
+  sql?: { configured: boolean };
   /** Present only when the optional Salesforce Connected App is configured. */
   salesforce?: {
     connected: boolean;
@@ -126,24 +128,31 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): { platforms: Plat
   }
 
   // --- TT: Vectory / AP2 / Alphaportal ---------------------------------------
-  if (on.has("vectory")) {
+  if (on.has("vectory") || on.has("vectory-sql")) {
+    const ttRead = on.has("vectory")
+      ? [
+          "TT MCP: ügyfélkeresés név, település, Vectory-kód, adószám, e-mail vagy telefon alapján; teljes ügyfélkép egy hívással (adatlap, jegyzetek, Vectory, AP2-számlák, ticketek, hívások, változásnapló, befizetések)",
+          "TT MCP: Alphaportal ticketek és kommentek, WenzTool hívások, változásnapló, lejáró fordulónapok, licenc-audit, ügyfélstatisztika, csapatjegyzetek",
+        ]
+      : [];
+    const sqlRead = on.has("vectory-sql")
+      ? [
+          "Vectory SQL (közvetlen, csak olvasó login): ügyfélkeresés és ügyfélkártya kontaktokkal, licencekkel, képviselőkkel; számlák sztornó-státusszal és fizetettséggel, számlatételek árréssel és szoftver-kategóriával, szoftver-lefedettség és licencszám, forgalom és ügyfélszint, befizetés dátuma, termékek listaárral",
+          "AP2 (alphavet): számlák fizetési móddal, számlatételek EAN-kóddal, ÁFA-val, lejárattal; szállítólevél-tételek",
+          "Ellenőrzött szabad SELECT a replikán (egyetlen lekérdezés, sorlimit, tiltott módosító kulcsszavak)",
+        ]
+      : [];
     platforms.push({
       key: "tt",
-      name: "Vectory / AP2 (TT)",
-      access: "A gateway a TT MCP-szerveren keresztül, közös TT API-kulccsal éri el — ez nem személyes jogosultság, ezért az admin dönti el, ki kapja meg a vectory toolsetet. Minden hívás naplózva a te neveddel.",
-      read: [
-        "Ügyfélkeresés név, település, Vectory-kód, adószám, e-mail vagy telefon alapján; teljes ügyfélkép egy hívással (adatlap, jegyzetek, Vectory, AP2-számlák, ticketek, hívások, változásnapló, befizetések)",
-        "Vectory: ügyféladatok, tartozás, kimenő számlák sztornó-státusszal, számlatételek, termékek, befizetések",
-        "AP2: AlphaVet-számlák és tételek, Alphaportal ticketek és kommentek",
-        "Egyéb TT-adatok: WenzTool hívások, változásnapló, lejáró fordulónapok, licenc-audit, ügyfélstatisztika, csapatjegyzetek",
-      ],
+      name: "Vectory / AP2",
+      access: "A gateway közös hozzáféréssel éri el (TT MCP API-kulcs, illetve csak olvasó SQL-login a Vectory replikához) — ez nem személyes jogosultság, ezért az admin dönti el, ki kapja meg a vectory és vectory-sql toolsetet. Minden hívás naplózva a te neveddel.",
+      read: [...ttRead, ...sqlRead],
       write: [],
-      readOnlyNote: "Csak olvasás: a TT MCP kizárólag lekérdező toolokat ad, a Vectory és az AP2 adatbázisába a gateway nem ír.",
+      readOnlyNote: "Csak olvasás: a gateway sem a Vectory (meditrade), sem az alphavet adatbázisba nem ír.",
     });
   }
-
   // Future-proofing: any toolset without a curated line above still shows up.
-  const covered: Toolset[] = ["gateway", "mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write", "salesforce-delete", "vectory"];
+  const covered: Toolset[] = ["gateway", "mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write", "salesforce-delete", "vectory", "vectory-sql"];
   for (const t of on) {
     if (covered.includes(t)) continue;
     const reads = enabledDefs.filter((d) => d.toolset === t && !d.write).length;
@@ -279,11 +288,17 @@ ${whatsNewCard}
 }
 
 function renderTtTile(s: PortalState): string {
-  if (!s.tt?.configured) return "";
+  const tt = s.tt?.configured ? s.tt : undefined;
+  const sql = s.sql?.configured;
+  if (!tt && !sql) return "";
+  const parts: string[] = [];
+  if (tt) parts.push(tt.error ? `TT MCP jelenleg nem elérhető: ${esc(tt.error)}` : `TT MCP: ${tt.toolCount} lekérdező tool (ügyfél, ticketek, hívások)`);
+  if (sql) parts.push("Vectory SQL replika: számlák, tételek, szoftver-lefedettség, AP2-számlák (csak olvasó login)");
+  const bad = !!(tt && tt.error) && !sql;
   return `
   <div class="tile">
-    <div class="tile-head"><span class="ico tt">V</span><b>Vectory / AP2</b>${s.tt.error ? `<span class="pill">hiba</span>` : `<span class="pill ok">bekötve</span>`}</div>
-    <p class="muted">A TT MCP-szerveren keresztül, közös kulccsal — külön összekötés nem kell. ${s.tt.error ? `Jelenleg nem elérhető: ${esc(s.tt.error)}` : `${s.tt.toolCount} lekérdező tool (ügyfél, számlák, tételek, ticketek), csak olvasás.`}</p>
+    <div class="tile-head"><span class="ico tt">V</span><b>Vectory / AP2</b>${bad ? `<span class="pill">hiba</span>` : `<span class="pill ok">bekötve</span>`}</div>
+    <p class="muted">Közös hozzáféréssel, külön összekötés nem kell. ${parts.join(" · ")}. Csak olvasás.</p>
   </div>`;
 }
 

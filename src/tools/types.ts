@@ -5,11 +5,13 @@ import type { AppConfig } from "../config.js";
 import type { SalesforceClient } from "../salesforce/client.js";
 import type { SfConnectionInfo } from "../salesforce/auth.js";
 import type { UserAccess } from "../users.js";
+import type { SqlClient } from "../sql/client.js";
 
 /** Logical toolsets of the Reporting profile (spec section 24). */
 export type Toolset =
   | "gateway"
   | "vectory"
+  | "vectory-sql"
   | "salesforce"
   | "salesforce-write"
   | "salesforce-delete"
@@ -51,7 +53,7 @@ export interface EndpointDef {
   toolset: Toolset;
   write?: boolean;
   /** Data source. Default "graph" (Microsoft Graph); "salesforce" tools run through the caller's own Salesforce connection. */
-  provider?: "graph" | "salesforce" | "gateway" | "tt";
+  provider?: "graph" | "salesforce" | "gateway" | "tt" | "sql";
   /** Custom implementation (non-Graph providers). Receives validated inputs and the tool context. */
   handler?: (args: Record<string, any>, ctx: ToolContext) => Promise<unknown>;
   /** Delegated Graph scopes used by this tool (documentation + matrix). */
@@ -121,6 +123,8 @@ export interface ToolContext {
   config: AppConfig;
   /** Present only in HTTP mode with a configured Salesforce Connected App. */
   salesforce?: SalesforceAccess;
+  /** Present only in HTTP mode with the Vectory SQL replica configured (read-only). */
+  sql?: SqlClient;
   /** The tool profile actually registered for this server instance (set by buildMcpServer). */
   enabledTools?: EndpointDef[];
   /** The calling user's effective access profile (HTTP mode); absent = no per-user restriction. */

@@ -46,6 +46,7 @@ ${rows.join("\n")}
 - No Files/Sites/OneNote/User/Group write, and no delete on the Microsoft 365 side.
 - Mail delete / folder delete / destructive mailbox operations are excluded.
 - TT / Vectory / AP2 (optional, toolset \`vectory\`): the TT MCP server's read-only tools are discovered at runtime and re-exposed with a \`tt-\` prefix (not listed here - see /admin Toolok).
+- Vectory SQL (optional, toolset \`vectory-sql\`): read-only, parameterised queries on the meditrade replica (+ alphavet cross-db) through a read-only login; the ad-hoc SELECT is validated (single statement, no DML/DDL/EXEC, row cap).
 - Salesforce (optional): reads plus a narrow write surface (create/update record, task, event, Chatter post, note) in toolset \`salesforce-write\`; a single \`delete-salesforce-record\` tool (Recycle Bin, 15 days) in the opt-in toolset \`salesforce-delete\`, which must be enabled explicitly; no Apex/Bulk/Metadata API; every call uses the user's own linked Salesforce login.
 `;
 

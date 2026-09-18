@@ -7,9 +7,9 @@ Principle: **read broadly, write narrowly** - the WRITE surface is Outlook mail
 Salesforce Connected App is configured - Salesforce activity/record writes. Every
 outbound send and every Salesforce write is gated by `confirm=true`.
 
-Total tools: **123** (24 WRITE, 99 READ)
+Total tools: **134** (24 WRITE, 110 READ)
 
-Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (6), salesforce (11), salesforce-write (6), salesforce-delete (1)
+Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (6), vectory-sql (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
 
 | MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -118,6 +118,17 @@ Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-wr
 | `list-directory-audits` | users | READ | GET | `/auditLogs/directoryAudits` | AuditLog.Read.All, Directory.Read.All | enabled | paginated, time-range |
 | `search-users` | users | READ | GET | `/users` | User.Read.All | enabled | paginated, search |
 | `get-user-access-report` | users | READ | GET | `/users/{user}/access-report` | Directory.Read.All, Sites.Read.All, Files.Read.All, Team.ReadBasic.All | enabled |  |
+| `vectory-find-customer` | vectory-sql | READ | GET | `/vectory/customers` | Vectory SQL (read-only login) | enabled |  |
+| `vectory-customer` | vectory-sql | READ | GET | `/vectory/customers/{vevokod}` | Vectory SQL (read-only login) | enabled |  |
+| `vectory-invoices` | vectory-sql | READ | GET | `/vectory/customers/{vevokod}/invoices` | Vectory SQL (read-only login) | enabled | paginated |
+| `vectory-invoice-items` | vectory-sql | READ | GET | `/vectory/invoices/{invoice}/items` | Vectory SQL (read-only login) | enabled |  |
+| `vectory-customer-software` | vectory-sql | READ | GET | `/vectory/customers/{vevokod}/software` | Vectory SQL (read-only login) | enabled |  |
+| `vectory-customer-turnover` | vectory-sql | READ | GET | `/vectory/customers/{vevokod}/turnover` | Vectory SQL (read-only login) | enabled |  |
+| `vectory-invoice-payment` | vectory-sql | READ | GET | `/vectory/invoices/{invoice}/payment` | Vectory SQL (read-only login) | enabled |  |
+| `vectory-product-search` | vectory-sql | READ | GET | `/vectory/products` | Vectory SQL (read-only login) | enabled |  |
+| `ap2-invoices` | vectory-sql | READ | GET | `/ap2/customers/{vevokod}/invoices` | Vectory SQL (read-only login) | enabled | paginated |
+| `ap2-invoice-items` | vectory-sql | READ | GET | `/ap2/invoices/{invoice}/items` | Vectory SQL (read-only login) | enabled |  |
+| `vectory-sql-query` | vectory-sql | READ | GET | `/vectory/query` | Vectory SQL (read-only login) | enabled |  |
 | `salesforce-connection-status` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/limits` | Salesforce: api | optional (Connected App configured) |  |
 | `salesforce-soql-query` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/query` | Salesforce: api | optional (Connected App configured) | paginated |
 | `salesforce-sosl-search` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/search` | Salesforce: api | optional (Connected App configured) |  |
@@ -144,4 +155,5 @@ Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-wr
 - No Files/Sites/OneNote/User/Group write, and no delete on the Microsoft 365 side.
 - Mail delete / folder delete / destructive mailbox operations are excluded.
 - TT / Vectory / AP2 (optional, toolset `vectory`): the TT MCP server's read-only tools are discovered at runtime and re-exposed with a `tt-` prefix (not listed here - see /admin Toolok).
+- Vectory SQL (optional, toolset `vectory-sql`): read-only, parameterised queries on the meditrade replica (+ alphavet cross-db) through a read-only login; the ad-hoc SELECT is validated (single statement, no DML/DDL/EXEC, row cap).
 - Salesforce (optional): reads plus a narrow write surface (create/update record, task, event, Chatter post, note) in toolset `salesforce-write`; a single `delete-salesforce-record` tool (Recycle Bin, 15 days) in the opt-in toolset `salesforce-delete`, which must be enabled explicitly; no Apex/Bulk/Metadata API; every call uses the user's own linked Salesforce login.

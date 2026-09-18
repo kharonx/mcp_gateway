@@ -2,7 +2,7 @@ import { z, type ZodRawShape } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { GraphError } from "../graph/client.js";
 import { SalesforceError } from "../salesforce/client.js";
-import { isSalesforceConfigured, isTtConfigured } from "../settings.js";
+import { isSalesforceConfigured, isTtConfigured, isSqlConfigured } from "../settings.js";
 import type { AppConfig } from "../config.js";
 import type { UserAccess } from "../users.js";
 import { resolveTimeRange, NAMED_RANGES } from "../graph/timeRange.js";
@@ -146,7 +146,7 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
         tool: def.name,
         operation: def.write ? ("WRITE" as const) : ("READ" as const),
         resourceType: def.resourceType,
-        graphEndpoint: def.provider === "salesforce" ? `salesforce:${graphPath}` : def.provider === "gateway" ? `gateway:${graphPath}` : def.provider === "tt" ? `tt:${graphPath}` : graphPath,
+        graphEndpoint: def.provider === "salesforce" ? `salesforce:${graphPath}` : def.provider === "gateway" ? `gateway:${graphPath}` : def.provider === "tt" ? `tt:${graphPath}` : def.provider === "sql" ? `sql:${graphPath}` : graphPath,
         httpMethod: def.method,
       };
       try {
@@ -252,6 +252,7 @@ export function isToolEnabled(def: EndpointDef, cfg: AppConfig, access?: UserAcc
   if (def.toolset === "salesforce-delete" && !cfg.enabledToolsets?.includes("salesforce-delete")) return false;
   if (def.provider === "salesforce" && !isSalesforceConfigured(cfg)) return false;
   if (def.provider === "tt" && !isTtConfigured(cfg)) return false;
+  if (def.provider === "sql" && !isSqlConfigured(cfg)) return false;
   // Per-user profile (admin "Felhasználók" tab) narrows the gateway-wide profile further.
   if (access) {
     if (access.blocked) return false;

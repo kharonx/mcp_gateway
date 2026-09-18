@@ -14,16 +14,18 @@ import { renderChangelogPage, buildInfo } from "./changelog.js";
 import { effectiveAccess, type UserAccess } from "../users.js";
 import { allEndpoints } from "../tools/endpoints/all.js";
 import { loadTtEndpoints } from "../tools/endpoints/tt.js";
+import { SqlClient } from "../sql/client.js";
 import type { EndpointDef } from "../tools/types.js";
 import { isToolEnabled } from "../tools/registry.js";
 import type { Toolset, ToolContext } from "../tools/types.js";
-import { SettingsStore, isEntraConfigured, isSalesforceConfigured, isTtConfigured, type MutableSettings } from "../settings.js";
+import { SettingsStore, isEntraConfigured, isSalesforceConfigured, isTtConfigured, isSqlConfigured, type MutableSettings } from "../settings.js";
 import { SalesforceAuth } from "../salesforce/auth.js";
 import { UserRegistry } from "../users.js";
 import type { AppConfig } from "../config.js";
 
 const ALL_TOOLSETS: Toolset[] = [
   "vectory",
+  "vectory-sql",
   "salesforce",
   "salesforce-write",
   "salesforce-delete",
@@ -120,6 +122,15 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     }
   }
   void refreshTt();
+
+  // Vectory SQL replica (read-only): one pool, rebuilt when the admin saves the SQL settings.
+  let sqlClient: SqlClient | null = null;
+  function refreshSql(): void {
+    const old = sqlClient;
+    sqlClient = isSqlConfigured(cfg) ? new SqlClient(cfg.sql) : null;
+    if (old) void old.close();
+  }
+  refreshSql();
   const currentEndpoints = (): EndpointDef[] => [...allEndpoints, ...ttEndpoints];
 
   const oauthProxy = new OAuthProxy(() => cfg, path.resolve("data"));
@@ -227,6 +238,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
         graphOk,
         graphError,
         loginError: typeof req.query.login_error === "string" ? req.query.login_error : undefined,
+        sql: { configured: isSqlConfigured(cfg) },
         salesforce: sfConfigured
           ? {
               connected: !!sfInfo,
@@ -299,6 +311,8 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       build: buildInfo(),
       configured: isEntraConfigured(cfg),
       salesforce: isSalesforceConfigured(cfg),
+      tt: isTtConfigured(cfg),
+      vectorySql: isSqlConfigured(cfg),
     });
   });
 
@@ -367,6 +381,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       session: oid || randomUUID(),
       config: cfg,
       access,
+      ...(sqlClient ? { sql: sqlClient } : {}),
       ...(isSalesforceConfigured(cfg) && oid
         ? {
             salesforce: {
@@ -532,6 +547,20 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     res.json({ ok: true });
   });
 
+  app.post("/admin/api/test-sql", adminAuth, async (_req, res) => {
+    if (!sqlClient) {
+      res.json({ ok: false, message: "A Vectory SQL szerver, felhasználó vagy jelszó hiányzik." });
+      return;
+    }
+    const r = await sqlClient.test();
+    if (!r.ok) res.json({ ok: false, message: r.error });
+    else
+      res.json({
+        ok: true,
+        message: `${r.server} / ${r.database} (${r.login}) - Vectory ügyfelek: ${r.vectoryCustomers ?? "nem látható"}, alphavet ügyfelek: ${r.alphavetCustomers ?? "nem látható"}`,
+      });
+  });
+
   app.post("/admin/api/test-tt", adminAuth, async (_req, res) => {
     if (!isTtConfigured(cfg)) {
       res.json({ ok: false, message: "A TT MCP URL vagy az API-kulcs hiányzik." });
@@ -568,6 +597,15 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       configured: isEntraConfigured(cfg),
       registeredMcpClients: oauthProxy.registeredClientCount(),
       redirectUri: `${cfg.baseUrl}/auth/callback`,
+      sql: {
+        server: cfg.sql.server,
+        port: cfg.sql.port,
+        database: cfg.sql.database,
+        user: cfg.sql.user,
+        passwordSet: !!cfg.sql.password,
+        encrypt: cfg.sql.encrypt,
+        configured: isSqlConfigured(cfg),
+      },
       tt: {
         url: cfg.tt.url,
         apiKeySet: !!cfg.tt.apiKey,
@@ -660,8 +698,15 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       patch.ttMcpUrl = raw;
     }
     if (typeof b.ttMcpApiKey === "string") patch.ttMcpApiKey = b.ttMcpApiKey.trim();
+    if (typeof b.sqlServer === "string") patch.sqlServer = b.sqlServer.trim();
+    if (b.sqlPort !== undefined) { const p = Number(b.sqlPort); if (Number.isFinite(p) && p > 0 && p < 65536) patch.sqlPort = Math.floor(p); }
+    if (typeof b.sqlDatabase === "string") patch.sqlDatabase = b.sqlDatabase.trim();
+    if (typeof b.sqlUser === "string") patch.sqlUser = b.sqlUser.trim();
+    if (typeof b.sqlPassword === "string") patch.sqlPassword = b.sqlPassword;
+    if (typeof b.sqlEncrypt === "boolean") patch.sqlEncrypt = b.sqlEncrypt;
     store.save(patch);
     applySettings();
+    refreshSql();
     await refreshTt();
     res.json({ ok: true, configured: isEntraConfigured(cfg), tt: { configured: isTtConfigured(cfg), toolCount: ttEndpoints.length, error: ttError } });
   });
@@ -706,7 +751,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
         toolset: d.toolset,
         write: !!d.write,
         method: d.method,
-        path: d.provider === "salesforce" ? `Salesforce ${d.path}` : d.provider === "tt" ? `TT MCP ${d.path}` : d.path,
+        path: d.provider === "salesforce" ? `Salesforce ${d.path}` : d.provider === "tt" ? `TT MCP ${d.path}` : d.provider === "sql" ? `Vectory SQL ${d.path}` : d.path,
         scopes: d.scopes,
         description: d.description,
       }));

@@ -29,6 +29,13 @@ export interface MutableSettings {
   /** Optional TT MCP server (Vectory / AP2). */
   ttMcpUrl?: string;
   ttMcpApiKey?: string;
+  /** Optional Vectory SQL replica (read-only login). */
+  sqlServer?: string;
+  sqlPort?: number;
+  sqlDatabase?: string;
+  sqlUser?: string;
+  sqlPassword?: string;
+  sqlEncrypt?: boolean;
 }
 
 export class SettingsStore {
@@ -54,7 +61,7 @@ export class SettingsStore {
     const next: MutableSettings = { ...this.settings };
     for (const [k, v] of Object.entries(patch) as [keyof MutableSettings, unknown][]) {
       if (v === undefined) continue;
-      if ((k === "clientSecret" || k === "salesforceClientSecret" || k === "ttMcpApiKey") && v === "") continue; // masked in UI - keep stored value
+      if ((k === "clientSecret" || k === "salesforceClientSecret" || k === "ttMcpApiKey" || k === "sqlPassword") && v === "") continue; // masked in UI - keep stored value
       (next as Record<string, unknown>)[k] = v;
     }
     this.settings = next;
@@ -90,8 +97,21 @@ export class SettingsStore {
         url: (s.ttMcpUrl || base.tt.url).replace(/\/+$/, ""),
         apiKey: s.ttMcpApiKey ?? base.tt.apiKey,
       },
+      sql: {
+        server: s.sqlServer || base.sql.server,
+        port: s.sqlPort || base.sql.port,
+        database: s.sqlDatabase || base.sql.database,
+        user: s.sqlUser ?? base.sql.user,
+        password: s.sqlPassword ?? base.sql.password,
+        encrypt: s.sqlEncrypt ?? base.sql.encrypt,
+      },
     };
   }
+}
+
+/** Vectory SQL is optional: tools exist only with server, user and password. */
+export function isSqlConfigured(cfg: AppConfig): boolean {
+  return !!(cfg.sql.server && cfg.sql.user && cfg.sql.password);
 }
 
 /** TT (Vectory / AP2) is optional: its toolset exists only with a URL and an API key. */

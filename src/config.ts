@@ -28,6 +28,18 @@ export interface TtConfig {
 
 export const TT_DEFAULTS = { url: "https://tt.dokiforvet.hu/mcp" };
 
+/** Optional direct READ-ONLY SQL access to the Vectory replica (meditrade + alphavet cross-db). Empty server/user/password = off. */
+export interface SqlConfig {
+  server: string;
+  port: number;
+  database: string;
+  user: string;
+  password: string;
+  encrypt: boolean;
+}
+
+export const SQL_DEFAULTS = { server: "sqlreplica.alpha-vet.hu", port: 1433, database: "meditrade", encrypt: false };
+
 export const SALESFORCE_DEFAULTS = {
   loginUrl: "https://login.salesforce.com",
   scopes: "api refresh_token",
@@ -37,6 +49,7 @@ export const SALESFORCE_DEFAULTS = {
 export interface AppConfig {
   salesforce: SalesforceConfig;
   tt: TtConfig;
+  sql: SqlConfig;
   tenantId: string;
   clientId: string;
   clientSecret: string;
@@ -76,6 +89,14 @@ export function loadConfig(argv: string[] = process.argv.slice(2)): AppConfig {
     maxDownloadBytes: num(process.env.MAX_DOWNLOAD_BYTES, 10 * 1024 * 1024),
     auditDir: path.resolve(process.env.AUDIT_DIR ?? "./logs"),
     adminKey: process.env.ADMIN_KEY ?? "",
+    sql: {
+      server: process.env.VECTORY_SQL_SERVER || SQL_DEFAULTS.server,
+      port: num(process.env.VECTORY_SQL_PORT, SQL_DEFAULTS.port),
+      database: process.env.VECTORY_SQL_DATABASE || SQL_DEFAULTS.database,
+      user: process.env.VECTORY_SQL_USER ?? "",
+      password: process.env.VECTORY_SQL_PASSWORD ?? "",
+      encrypt: (process.env.VECTORY_SQL_ENCRYPT ?? "false").toLowerCase() === "true",
+    },
     tt: {
       url: (process.env.TT_MCP_URL || TT_DEFAULTS.url).replace(/\/+$/, ""),
       apiKey: process.env.TT_MCP_API_KEY ?? "",

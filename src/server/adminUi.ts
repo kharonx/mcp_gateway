@@ -158,6 +158,24 @@ export const ADMIN_HTML = `<!doctype html>
     <div style="margin-top:.6rem"><button class="sec" onclick="testTt()">TT kapcsolat tesztelése</button> <span id="s-ttmsg" class="msg"></span></div>
     <div id="s-tttools" class="muted" style="margin-top:.4rem; font-size:.8rem"></div>
   </fieldset>
+  <fieldset>
+    <legend>Vectory SQL replika — közvetlen, csak olvasás (opcionális)</legend>
+    <p class="muted" style="margin-top:0">Ha kitöltöd, megjelenik a <code>vectory-sql</code> toolset: paraméterezett lekérdezések közvetlenül a Vectory replikán
+    (<code>meditrade</code>, ugyanazon a kapcsolaton az <code>alphavet.dbo.*</code> táblák is): ügyfélkeresés, ügyfélkártya kontaktokkal és licencekkel, számlák sztornó-státusszal,
+    számlatételek szoftver-kategóriával, szoftver-lefedettség, forgalom és ügyfélszint, befizetés dátuma, termékkeresés, AP2-számlák és tételek, plusz egy ellenőrzött szabad SELECT.
+    <b>Csak olvasás:</b> a gateway minden lekérdezést ellenőriz (egyetlen SELECT, tiltott kulcsszavak nélkül, sorlimit), de a védelem alapja a
+    <b>csak olvasó SQL-felhasználó</b> (db_datareader) — a TT <code>sysdba</code> loginját ne add meg ide. Belső hálón <code>Encrypt</code> kikapcsolva.</p>
+    <div style="display:flex; gap:1rem; flex-wrap:wrap">
+      <label class="f">SQL szerver <input type="text" id="s-sqlServer" placeholder="sqlreplica.alpha-vet.hu"></label>
+      <label class="f">Port <input type="number" id="s-sqlPort" placeholder="1433" min="1" max="65535"></label>
+      <label class="f">Adatbázis <input type="text" id="s-sqlDatabase" placeholder="meditrade"></label>
+    </div>
+    <label class="f">SQL felhasználó (csak olvasó) <input type="text" id="s-sqlUser" placeholder="mcp_reader"></label>
+    <label class="f">SQL jelszó <input type="password" id="s-sqlPassword" placeholder="(változatlan, ha üresen hagyod)"></label>
+    <label class="f"><input type="checkbox" id="s-sqlEncrypt"> Titkosított kapcsolat (Encrypt=true; belső hálón általában ki)</label>
+    <div class="pill" id="s-sqlState">–</div>
+    <div style="margin-top:.6rem"><button class="sec" onclick="testSql()">SQL kapcsolat tesztelése</button> <span id="s-sqlmsg" class="msg"></span></div>
+  </fieldset>
   <button class="primary" onclick="saveSettings()">Mentés</button>
   <button class="sec" onclick="testConnection()">Entra kapcsolat tesztelése</button>
   <span id="s-msg" class="msg"></span>
@@ -284,6 +302,13 @@ async function disconnectSf(oid){
   try { await api('/admin/api/users/' + encodeURIComponent(oid) + '/salesforce', { method: 'DELETE' }); await loadUsers(); }
   catch(e){ alert('Hiba: ' + e.message); }
 }
+async function testSql(){
+  const m = document.getElementById('s-sqlmsg');
+  m.textContent = 'Tesztelés…'; m.className = 'msg muted';
+  try { const r = await api('/admin/api/test-sql', { method: 'POST', body: '{}' });
+    m.textContent = (r.ok ? '✓ ' : '✗ ') + r.message; m.className = 'msg ' + (r.ok ? 'ok' : 'fail');
+  } catch(e){ m.textContent = 'Hiba: ' + e.message; m.className = 'msg fail'; }
+}
 async function testTt(){
   const m = document.getElementById('s-ttmsg');
   m.textContent = 'Tesztelés…'; m.className = 'msg muted';
@@ -332,6 +357,14 @@ async function loadSettings(){
   document.getElementById('s-ttKey').placeholder = tt.apiKeySet ? '******** (változatlan, ha üresen hagyod)' : 'Mcp:ApiKey';
   document.getElementById('s-ttState').textContent = !tt.configured ? 'TT integráció kikapcsolva' : tt.error ? 'TT hiba: ' + tt.error : 'vectory toolset aktív ✓ (' + (tt.toolCount||0) + ' tool)';
   document.getElementById('s-tttools').textContent = (tt.tools || []).join(', ');
+  const sq = s.sql || {};
+  document.getElementById('s-sqlServer').value = sq.server || '';
+  document.getElementById('s-sqlPort').value = sq.port || 1433;
+  document.getElementById('s-sqlDatabase').value = sq.database || '';
+  document.getElementById('s-sqlUser').value = sq.user || '';
+  document.getElementById('s-sqlPassword').placeholder = sq.passwordSet ? '******** (változatlan, ha üresen hagyod)' : 'jelszó';
+  document.getElementById('s-sqlEncrypt').checked = !!sq.encrypt;
+  document.getElementById('s-sqlState').textContent = sq.configured ? 'vectory-sql toolset aktív ✓' : 'Vectory SQL integráció kikapcsolva';
   TOOLSETS_AVAILABLE = s.toolsetsAvailable || [];
   renderToolsetChecks(document.getElementById('s-toolsets'), 'ts', s.enabledToolsets || []);
   const dua = s.defaultUserAccess || { toolsets: null, readOnly: false };
@@ -361,6 +394,12 @@ async function saveSettings(){
     salesforceApiVersion: document.getElementById('s-sfApiVersion').value,
     ttMcpUrl: document.getElementById('s-ttUrl').value,
     ttMcpApiKey: document.getElementById('s-ttKey').value,
+    sqlServer: document.getElementById('s-sqlServer').value,
+    sqlPort: +document.getElementById('s-sqlPort').value || 1433,
+    sqlDatabase: document.getElementById('s-sqlDatabase').value,
+    sqlUser: document.getElementById('s-sqlUser').value,
+    sqlPassword: document.getElementById('s-sqlPassword').value,
+    sqlEncrypt: document.getElementById('s-sqlEncrypt').checked,
   };
   const m = document.getElementById('s-msg');
   try { await api('/admin/api/settings', { method: 'PUT', body: JSON.stringify(body) });
@@ -368,6 +407,7 @@ async function saveSettings(){
     document.getElementById('s-clientSecret').value = '';
     document.getElementById('s-sfClientSecret').value = '';
     document.getElementById('s-ttKey').value = '';
+    document.getElementById('s-sqlPassword').value = '';
     await loadSettings(); await loadTools();
   } catch(e){ m.textContent = 'Hiba: ' + e.message; m.className = 'msg fail'; }
 }

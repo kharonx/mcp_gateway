@@ -124,6 +124,18 @@ Minden TT-tool csak olvasás; a gateway nem éri el közvetlenül a Vectory (med
 Beállítás: admin felület (URL, kulcs, kapcsolatteszt) vagy env `TT_MCP_URL`, `TT_MCP_API_KEY`. A TT-elérés nem
 személyes jogosultság, ezért a toolsetet a felhasználói jogosultságokkal érdemes szűkíteni.
 
+## Vectory SQL replika (közvetlen, csak olvasás, opcionális)
+
+Toolset `vectory-sql`, provider `sql` (`src/sql/client.ts`, `src/tools/endpoints/vectorySql.ts`): `mssql`
+pool a Vectory replikához (`sqlreplica.alpha-vet.hu`, `meditrade`, cross-db `alphavet.dbo.*`), csak olvasó
+loginnal. Curated, paraméterezett toolok (ügyfélkeresés, ügyfélkártya, számlák sztornó-státusszal,
+tételek szoftver-kategóriával, szoftver-lefedettség, forgalom/ügyfélszint, befizetés dátuma, termékek,
+AP2-számlák és tételek) és egy ellenőrzött szabad SELECT (`vectory-sql-query`). Minden lekérdezés a
+`assertReadOnlySelect` szűrőn megy át (egy statement, SELECT/WITH, tiltott DML/DDL/EXEC kulcsszavak,
+`SET ROWCOUNT` sorlimit, 180 mp timeout). Ügyfélkulcs: `UGYFEL.VEVOKOD` (meditrade) = `UGYFEL.UGYFELKOD`
+(alphavet) = TT `vectorykod`. Beállítás: admin felület vagy env `VECTORY_SQL_SERVER/PORT/DATABASE/USER/PASSWORD/ENCRYPT`.
+A Coolify-szervernek el kell érnie az SQL-replikát (belső háló / VPN) — a kapcsolatteszt ezt mutatja.
+
 ## Felhasználói hozzáférési (kilépési) riport
 
 `get-user-access-report` (toolset `users`, csak olvasás): egy felhasználóhoz végigmegy a

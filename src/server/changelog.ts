@@ -28,6 +28,17 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-09-18",
+    commit: "HEADHASH",
+    title: "Vectory SQL: közvetlen, csak olvasó lekérdezések a replikán",
+    items: [
+      "Új, opcionális vectory-sql toolset a Vectory replika (meditrade) és az alphavet adatbázis közvetlen, csak olvasó eléréséhez: vectory-find-customer (név, adószám, VEVOKOD vagy telefonszám-végződés alapján), vectory-customer (ügyfélkártya kontaktokkal, licencszámmal, képviselőkkel), vectory-invoices (számlák sztornó-státusszal, fizetettséggel, dátumszűréssel), vectory-invoice-items (tételek árréssel, szoftver-kategóriával), vectory-customer-software (szoftver-előfizetések, lefedettség vége kategóriánként), vectory-customer-turnover (forgalom és ügyfélszint), vectory-invoice-payment (befizetés dátuma), vectory-product-search (termékek listaárral), ap2-invoices és ap2-invoice-items (AlphaVet-számlák, szállítólevél-tételek), valamint vectory-sql-query egyetlen, ellenőrzött szabad SELECT-hez.",
+      "Az ügyfélkulcs mindenhol a TT vectorykod: a meditrade-ben UGYFEL.VEVOKOD (nem az UGYFELKOD), az alphavet-ben UGYFEL.UGYFELKOD; a lekérdezések a leírás szerint az UGYFEL táblán keresztül joinolnak.",
+      "Csak olvasás, két rétegben: a gateway minden lekérdezést ellenőriz (egyetlen SELECT/WITH, tiltott módosító és végrehajtó kulcsszavak, sorlimit, 180 mp időkorlát, paraméterezés), a védelem alapja pedig a csak olvasó SQL-felhasználó — a TT sysdba loginját nem szabad megadni.",
+      "Beállítás az admin felületen (szerver, port, adatbázis, felhasználó, jelszó, Encrypt) kapcsolatteszttel, vagy env: VECTORY_SQL_SERVER, VECTORY_SQL_USER, VECTORY_SQL_PASSWORD. A vectory-sql toolset a felhasználói jogosultságokkal név szerint kiosztható; minden hívás a hívó nevével kerül az auditnaplóba.",
+    ],
+  },
+  {
+    date: "2026-09-18",
     commit: "7215f7c",
     title: "Új platform: Vectory / AP2 a TT MCP-szerveren keresztül",
     items: [

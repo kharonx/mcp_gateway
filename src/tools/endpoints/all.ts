@@ -14,6 +14,7 @@ import { loopEndpoints } from "./loop.js";
 import { searchEndpoints } from "./search.js";
 import { usersEndpoints } from "./users.js";
 import { accessReportEndpoints } from "./accessReport.js";
+import { vectorySqlEndpoints } from "./vectorySql.js";
 import { salesforceEndpoints } from "./salesforce.js";
 import { salesforceWriteEndpoints } from "./salesforceWrite.js";
 import { gatewayEndpoints } from "./gateway.js";
@@ -36,6 +37,7 @@ export const allEndpoints: EndpointDef[] = [
   ...searchEndpoints,
   ...usersEndpoints,
   ...accessReportEndpoints,
+  ...vectorySqlEndpoints,
   ...salesforceEndpoints,
   ...salesforceWriteEndpoints,
 ];

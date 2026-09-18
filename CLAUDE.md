@@ -18,6 +18,9 @@
   server (`src/tt/client.ts`, shared API key from admin settings / `TT_MCP_API_KEY`); tools are discovered at
   runtime (`loadTtEndpoints`, re-run on settings save) and passed to `buildMcpServer(ctx, extra)`. Never add
   direct SQL access to meditrade/alphavet here - read-only TT tools only.
+- Vectory SQL is optional: toolset `vectory-sql`, provider `sql` (`src/sql/client.ts`, `src/tools/endpoints/vectorySql.ts`),
+  READ-ONLY by contract: every query passes `assertReadOnlySelect` and a row cap; use parameters (`@name`), never
+  string-inline values; customer key is `UGYFEL.VEVOKOD` in meditrade (not UGYFELKOD), `UGYFEL.UGYFELKOD` in alphavet.
 - Salesforce is optional: tools with `provider: "salesforce"` are registered only when a Connected
   App is configured (admin UI / `SF_CLIENT_ID`); per-user OAuth (PKCE) keyed by Entra oid in
   `data/salesforce-tokens.json`. Reads live in `salesforce.ts` (toolset `salesforce`), writes in
