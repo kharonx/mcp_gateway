@@ -131,6 +131,7 @@ export const accessReportEndpoints: EndpointDef[] = [
       maxDepth: z.number().int().min(1).max(8).optional().describe("Folder depth to walk inside each library (default 4)"),
       includeOneDrive: z.boolean().optional().describe("Also inspect the user's own OneDrive for items they shared with others (default true)"),
       includeSharedWithUser: z.boolean().optional().describe("Try the user's sharedWithMe view and shared Insights (default true; Graph may refuse these for another user)"),
+      maxListItems: z.number().int().min(10).max(1000).optional().describe("Max rows returned per list (groups, grants, shared items); counts are always complete. Default 60."),
     },
     handler: async (args, ctx: ToolContext) => {
       const graph = ctx.graph;
@@ -156,7 +157,10 @@ export const accessReportEndpoints: EndpointDef[] = [
 
       // 2. Memberships (transitive) + direct + owned ----------------------
       const memberSelect = "id,displayName,groupTypes,mail,visibility,resourceProvisioningOptions,securityEnabled,mailEnabled,description";
-      const transitive = await pagedAll(graph, stats, `/users/${userId}/transitiveMemberOf`, { $select: memberSelect, $top: "999" }, 2000, "transitiveMemberOf");
+      // Cast segments: on the untyped directoryObject collection Graph drops group-only $select
+      // fields (displayName, groupTypes, ...), which made every group look like a nameless DL.
+      const transitive = await pagedAll(graph, stats, `/users/${userId}/transitiveMemberOf/microsoft.graph.group`, { $select: memberSelect, $top: "999" }, 2000, "transitiveMemberOf");
+      const roleObjs = await pagedAll(graph, stats, `/users/${userId}/transitiveMemberOf/microsoft.graph.directoryRole`, { $select: "id,displayName,description" }, 200, "directoryRoles").catch(() => [] as any[]);
       const direct = await pagedAll(graph, stats, `/users/${userId}/memberOf`, { $select: "id" }, 2000, "memberOf");
       const owned = await pagedAll(graph, stats, `/users/${userId}/ownedObjects`, { $select: "id" }, 2000, "ownedObjects");
       const directIds = new Set(direct.map((g) => String(g.id)));
@@ -164,12 +168,8 @@ export const accessReportEndpoints: EndpointDef[] = [
       const groupNames = new Map<string, string>();
       const groups: any[] = [];
       const roles: any[] = [];
+      for (const r of roleObjs) roles.push({ id: r.id, name: r.displayName, description: r.description });
       for (const g of transitive) {
-        const type = String(g["@odata.type"] ?? "");
-        if (type.endsWith("directoryRole")) {
-          roles.push({ id: g.id, name: g.displayName, description: g.description });
-          continue;
-        }
         groupNames.set(String(g.id), String(g.displayName ?? g.id));
         const unified = (g.groupTypes ?? []).includes("Unified");
         const team = (g.resourceProvisioningOptions ?? []).includes("Team");
@@ -385,17 +385,22 @@ export const accessReportEndpoints: EndpointDef[] = [
         },
       };
 
+      const cap = Math.min(Number(args.maxListItems) || 60, 1000);
+      const clip = <T,>(arr: T[], label: string): T[] => {
+        if (arr.length > cap) stats.truncated.push(`${label}: showing ${cap} of ${arr.length} (raise maxListItems)`);
+        return arr.slice(0, cap);
+      };
       return {
         ...summary,
         directoryRoles: roles,
-        groups,
+        groups: clip(groups, "groups"),
         groupConnectedSites: groupSites,
         scannedSites: sites.map((s) => ({ site: s.displayName ?? s.name, siteUrl: s.webUrl, siteId: s.id })),
-        grants,
-        organizationOrAnonymousLinks: linkGrants,
-        unresolvedSiteGroups,
-        sharedByUser,
-        sharedWithUser,
+        grants: clip(grants, "grants"),
+        organizationOrAnonymousLinks: clip(linkGrants, "organizationOrAnonymousLinks"),
+        unresolvedSiteGroups: clip(unresolvedSiteGroups, "unresolvedSiteGroups"),
+        sharedByUser: clip(sharedByUser, "sharedByUser"),
+        sharedWithUser: clip(sharedWithUser, "sharedWithUser"),
         stats,
         errors,
         notes,

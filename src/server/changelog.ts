@@ -27,6 +27,15 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-09-28",
+    commit: "HEADHASH",
+    title: "Kilépési riport: csoportnevek, Teams és tömörebb válasz",
+    items: [
+      "Javítás a get-user-access-report toolban: az első éles futáson minden csoport név nélküli terjesztési listaként jelent meg, ezért a Teams-tagság és a csoportokhoz tartozó SharePoint-oldalak kimaradtak. A csoportok és a címtárszerepek mostantól típusos lekérdezéssel jönnek, névvel, csoporttípussal (Team, M365-csoport, biztonsági csoport, terjesztési lista) és tulajdonos/tag szereppel.",
+      "A válasz tömörebb: a hosszú listák (csoportok, jogosultságok, megosztások) alapból 60 sorig jönnek vissza, a darabszámok mindig teljesek, a csonkolást a stats.truncated jelzi; a maxListItems paraméterrel növelhető. Az első futás válasza 100 ezer karakter felett volt, ami a kliensek korlátját túllépte.",
+    ],
+  },
+  {
     date: "2026-09-18",
     commit: "7676b6b",
     title: "Vectory SQL: közvetlen, csak olvasó lekérdezések a replikán",
