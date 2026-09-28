@@ -21,7 +21,7 @@ import { GraphError, type GraphClient } from "../../graph/client.js";
  *   from the user's sharedWithMe view and Insights where Graph allows it.
  */
 
-const SCOPES = ["Directory.Read.All", "Sites.Read.All", "Files.Read.All", "Team.ReadBasic.All"];
+const SCOPES = ["Directory.Read.All", "GroupMember.Read.All", "Sites.Read.All", "Files.Read.All", "Team.ReadBasic.All"];
 
 interface Grant {
   site: string;
@@ -176,12 +176,20 @@ export const accessReportEndpoints: EndpointDef[] = [
         groups.push({
           id: g.id,
           name: g.displayName,
-          kind: team ? "team" : unified ? "m365Group" : g.securityEnabled ? (g.mailEnabled ? "mailEnabledSecurity" : "security") : "distributionList",
+          kind: g.displayName == null && g.groupTypes == null && g.securityEnabled == null
+            ? "unknown"
+            : team ? "team" : unified ? "m365Group" : g.securityEnabled ? (g.mailEnabled ? "mailEnabledSecurity" : "security") : "distributionList",
           mail: g.mail ?? undefined,
           visibility: g.visibility ?? undefined,
           role: ownedIds.has(String(g.id)) ? "owner" : "member",
           membership: directIds.has(String(g.id)) ? "direct" : "nested",
         });
+      }
+
+      if (groups.length && groups.every((g) => g.kind === "unknown")) {
+        notes.push(
+          "Group details (name, type) came back empty for all groups: the gateway's Graph token can list the membership ids but not read the groups. Grant and admin-consent the delegated Graph permission GroupMember.Read.All (or Group.Read.All) on the gateway app registration; until then Teams membership and group-connected sites cannot be resolved."
+        );
       }
 
       // 3. Group-connected sites (M365 groups & Teams) -------------------

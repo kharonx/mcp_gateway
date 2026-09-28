@@ -25,6 +25,7 @@ export const READ_SCOPES = [
   "Files.Read.All",
   "AuditLog.Read.All",
   "Directory.Read.All",
+  "GroupMember.Read.All",
 ];
 
 /** WRITE surface: Outlook mail, calendar events, Teams messages - each send/create gated by confirm=true. */

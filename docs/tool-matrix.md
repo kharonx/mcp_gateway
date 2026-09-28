@@ -117,7 +117,7 @@ Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-wr
 | `get-user-account-status-history` | users | READ | GET | `/auditLogs/directoryAudits` | AuditLog.Read.All, Directory.Read.All | enabled | paginated, time-range, search |
 | `list-directory-audits` | users | READ | GET | `/auditLogs/directoryAudits` | AuditLog.Read.All, Directory.Read.All | enabled | paginated, time-range |
 | `search-users` | users | READ | GET | `/users` | User.Read.All | enabled | paginated, search |
-| `get-user-access-report` | users | READ | GET | `/users/{user}/access-report` | Directory.Read.All, Sites.Read.All, Files.Read.All, Team.ReadBasic.All | enabled |  |
+| `get-user-access-report` | users | READ | GET | `/users/{user}/access-report` | Directory.Read.All, GroupMember.Read.All, Sites.Read.All, Files.Read.All, Team.ReadBasic.All | enabled |  |
 | `vectory-find-customer` | vectory-sql | READ | GET | `/vectory/customers` | Vectory SQL (read-only login) | enabled |  |
 | `vectory-customer` | vectory-sql | READ | GET | `/vectory/customers/{vevokod}` | Vectory SQL (read-only login) | enabled |  |
 | `vectory-invoices` | vectory-sql | READ | GET | `/vectory/customers/{vevokod}/invoices` | Vectory SQL (read-only login) | enabled | paginated |
