@@ -14,11 +14,11 @@
   gateway-wide profile per user (toolset allowlist, readOnly, blocked); users without one get
   `cfg.defaultUserAccess` (admin settings). `isToolEnabled(def, cfg, access)` is the single enforcement point,
   used by the MCP server, the portal and the admin user list; blocked users get 403 on /mcp.
-- TT / Vectory / AP2 is optional: toolset `vectory`, provider `tt`. The gateway is an MCP *client* of the TT
+- TT (our product-support system; its customer data comes partly from Vectory) is optional: toolset `tt`, provider `tt`. The gateway is an MCP *client* of the TT
   server (`src/tt/client.ts`, shared API key from admin settings / `TT_MCP_API_KEY`); tools are discovered at
   runtime (`loadTtEndpoints`, re-run on settings save) and passed to `buildMcpServer(ctx, extra)`. Never add
   direct SQL access to meditrade/alphavet here - read-only TT tools only.
-- Vectory SQL is optional: toolset `vectory-sql`, provider `sql` (`src/sql/client.ts`, `src/tools/endpoints/vectorySql.ts`),
+- Vectory = our ERP. Optional: toolset `vectory`, provider `sql` (`src/sql/client.ts`, `src/tools/endpoints/vectorySql.ts`),
   READ-ONLY by contract: every query passes `assertReadOnlySelect` and a row cap; use parameters (`@name`), never
   string-inline values; customer key is `UGYFEL.VEVOKOD` in meditrade (not UGYFELKOD), `UGYFEL.UGYFELKOD` in alphavet.
 - Salesforce is optional: tools with `provider: "salesforce"` are registered only when a Connected
@@ -32,3 +32,5 @@
 - Graph quirks already handled (keep them): OneNote notebooks/sections return no `@odata.nextLink`
   (`skipPaging`), OneNote pages have no full-text search in v1.0, `parentNotebook` needs `$expand`,
   `sectionGroup` has no `links` property, large collections continue via `cursor`/`nextCursor`.
+- Toolset renames go through `src/toolsetMigration.ts` (stored settings + users.json are rewritten once at startup,
+  marker `toolsetSchema` in settings.json). Schema 2 (2026-10): TT proxy `vectory` -> `tt`, ERP `vectory-sql` -> `vectory`.

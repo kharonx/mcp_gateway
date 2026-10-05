@@ -62,6 +62,18 @@ export class UserRegistry {
     }
   }
 
+  /** Rewrite every individual toolset allowlist (one-time rename, see toolsetMigration.ts). */
+  migrateToolsets(map: (list: string[] | null) => string[] | null): number {
+    let n = 0;
+    for (const u of this.users.values()) {
+      if (!u.access || !Array.isArray(u.access.toolsets)) continue;
+      u.access.toolsets = map(u.access.toolsets);
+      n++;
+    }
+    if (n) this.persist(true);
+    return n;
+  }
+
   private persist(force = false): void {
     this.dirty = true;
     // MCP traffic can be chatty: coalesce writes to one per 5 s unless forced.

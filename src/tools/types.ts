@@ -10,8 +10,8 @@ import type { SqlClient } from "../sql/client.js";
 /** Logical toolsets of the Reporting profile (spec section 24). */
 export type Toolset =
   | "gateway"
+  | "tt"
   | "vectory"
-  | "vectory-sql"
   | "salesforce"
   | "salesforce-write"
   | "salesforce-delete"

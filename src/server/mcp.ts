@@ -10,8 +10,8 @@ import { CHANGELOG, buildInfo } from "./changelog.js";
 /** Short label per toolset for the generated instructions. */
 const TOOLSET_LABELS: Record<Toolset, string> = {
   gateway: "gateway self-description (get-gateway-info)",
-  "vectory-sql": "Vectory SQL replica (meditrade + alphavet), read-only: find customer, customer card with contacts/licences/reps, invoices with storno status, invoice items with software classification, software coverage, turnover and tier, payment date, product search, AP2 invoices and items, one validated ad-hoc SELECT (vectory-sql-query). Customer key = VEVOKOD (TT vectorykod)",
-  vectory: "TT - Vectory / AP2 / Alphaportal: customer search, customer 360, Vectory invoices and items, AP2 invoices and tickets, payments, licence audit (read-only, via the TT MCP server; start with tt-ugyfel-kereses)",
+  vectory: "Vectory ERP - direct read-only access to the replica (meditrade + alphavet): find customer, customer card with contacts/licences/reps, invoices with storno status, invoice items with software classification, software coverage, turnover and tier, payment date, product search, AP2 invoices and items, one validated ad-hoc SELECT (vectory-sql-query). Customer key = VEVOKOD (TT vectorykod)",
+  tt: "TT - product-support system (its customer data comes partly from Vectory) / AP2 / Alphaportal: customer search, customer 360, Vectory invoices and items, AP2 invoices and tickets, payments, licence audit (read-only, via the TT MCP server; start with tt-ugyfel-kereses)",
   mail: "Outlook mail - read",
   "shared-mail": "shared mailboxes - read",
   "mail-write": "Outlook mail - draft/send/reply/forward (WRITE)",

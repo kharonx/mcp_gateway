@@ -88,7 +88,7 @@ export const vectorySqlEndpoints: EndpointDef[] = [
     name: "vectory-find-customer",
     description:
       "FIND a customer in Vectory (meditrade) by name fragment, tax number, VEVOKOD (the TT 'vectorykod') or phone-number suffix (digits only, 6-12 from the end; matched against the alphavet contact tables). Returns VEVOKOD - the key every other Vectory/AP2 tool uses - plus name, tax number, city, debt. One customer may have several UGYFELKOD rows under one VEVOKOD. Read-only.",
-    toolset: "vectory-sql",
+    toolset: "vectory",
     provider: "sql",
     scopes: SCOPES,
     method: "GET",
@@ -134,7 +134,7 @@ export const vectorySqlEndpoints: EndpointDef[] = [
     name: "vectory-customer",
     description:
       "Vectory customer card by VEVOKOD (TT vectorykod): all UGYFEL rows under that code (name, tax number, address, currency, payment days HALADEK, debt TARTOZAS, credit limit), contacts from alphavet (persons with phone/e-mail, company phone/e-mail), licence counts (ugyfjell 715 server / 716 client) and sales representatives (UGYFUCS: Vet / Pet). Read-only.",
-    toolset: "vectory-sql",
+    toolset: "vectory",
     provider: "sql",
     scopes: SCOPES,
     method: "GET",
@@ -200,7 +200,7 @@ export const vectorySqlEndpoints: EndpointDef[] = [
     name: "vectory-invoices",
     description:
       "Vectory outgoing invoices of a customer (VEVOKOD): invoice number, date, due date, net, gross, paid amount, paid flag, type (SZLAJELZO), state (SZLAALL1; 3 = final), currency and storno status (Sztornózott = this invoice was cancelled, Sztornó = this is the cancelling invoice). Optional date range on SZKELTE, newest first. Read-only.",
-    toolset: "vectory-sql",
+    toolset: "vectory",
     provider: "sql",
     scopes: SCOPES,
     method: "GET",
@@ -230,7 +230,7 @@ export const vectorySqlEndpoints: EndpointDef[] = [
     name: "vectory-invoice-items",
     description:
       "Line items of one Vectory invoice (by SZLASZAM invoice number or SZIKTSZAM id): product code ETK, name, quantity, net unit price, discount %, net line value, purchase value (margin = NTETELERT - BESZERTEK), movement type MOZGNEM (<200 incoming, >200 outgoing), fulfilment date, product group. Software lines are classified (CLOUD / FARM / B4US / TT / TTREGI / IT) with covered months and licence counts. Read-only.",
-    toolset: "vectory-sql",
+    toolset: "vectory",
     provider: "sql",
     scopes: SCOPES,
     method: "GET",
@@ -274,7 +274,7 @@ export const vectorySqlEndpoints: EndpointDef[] = [
     name: "vectory-customer-software",
     description:
       "Software subscriptions bought by a customer (VEVOKOD) in Vectory: every software line (ETK DV%/DFV%/ISIT%/SZOFTVER%) with category (CLOUD / FARM / B4US / TT / TTREGI / IT), covered months, licence counts and the coverage end date per invoice (SZKELTE + max months x 30.44 days), newest first; plus the latest coverage end per category - use it to see whether a licence is still covered. Read-only.",
-    toolset: "vectory-sql",
+    toolset: "vectory",
     provider: "sql",
     scopes: SCOPES,
     method: "GET",
@@ -322,7 +322,7 @@ export const vectorySqlEndpoints: EndpointDef[] = [
     name: "vectory-customer-turnover",
     description:
       "Total net turnover of a customer (VEVOKOD) in Vectory (sum of SZAMLA.SZNETTOERT), the TT customer tier derived from it (bronz >= 1M, ezüst >= 1.5M, arany >= 2M, fekete >= 10M HUF) and a per-year breakdown. Read-only.",
-    toolset: "vectory-sql",
+    toolset: "vectory",
     provider: "sql",
     scopes: SCOPES,
     method: "GET",
@@ -346,7 +346,7 @@ export const vectorySqlEndpoints: EndpointDef[] = [
     name: "vectory-invoice-payment",
     description:
       "When was a Vectory invoice (SZLASZAM) paid: the last bank entry (banktetel tipus 1,2,4,5) for the invoice, or - when it was settled from an advance (afa_ki.eiktszam <> 0) - the invoice date; null when not fully paid. Also returns the amounts. Read-only.",
-    toolset: "vectory-sql",
+    toolset: "vectory",
     provider: "sql",
     scopes: SCOPES,
     method: "GET",
@@ -374,7 +374,7 @@ export const vectorySqlEndpoints: EndpointDef[] = [
     name: "vectory-product-search",
     description:
       "Search Vectory products (CIKK) by name fragment or ETK code prefix: ETK, name, product group and the current list price (ARTORZS, ARTIPUS 13, latest ARNAPTOL). Read-only.",
-    toolset: "vectory-sql",
+    toolset: "vectory",
     provider: "sql",
     scopes: SCOPES,
     method: "GET",
@@ -401,7 +401,7 @@ export const vectorySqlEndpoints: EndpointDef[] = [
     name: "ap2-invoices",
     description:
       "AP2 / AlphaVet invoices of a customer from the alphavet database (UGYFELKOD = TT vectorykod): invoice number, date, gross, net, payment method, due date; default last 12 months, newest first. Read-only.",
-    toolset: "vectory-sql",
+    toolset: "vectory",
     provider: "sql",
     scopes: SCOPES,
     method: "GET",
@@ -432,7 +432,7 @@ export const vectorySqlEndpoints: EndpointDef[] = [
     name: "ap2-invoice-items",
     description:
       "Line items of one AP2 / AlphaVet invoice (alphavet database) by invoice number: product code, name, quantity, net value after discount, stock/batch code, EAN barcode, VAT %, unit, batch expiry. Falls back to the delivery-note number (KESZLETF.KBIZSZAM) when the number is not an invoice. Read-only.",
-    toolset: "vectory-sql",
+    toolset: "vectory",
     provider: "sql",
     scopes: SCOPES,
     method: "GET",
@@ -463,7 +463,7 @@ export const vectorySqlEndpoints: EndpointDef[] = [
     name: "vectory-sql-query",
     description:
       "Run ONE read-only SELECT on the Vectory replica (database meditrade; alphavet tables as alphavet.dbo.X) for anything the curated tools do not cover. Rules enforced by the gateway: single statement, must start with SELECT/WITH, no comments, no DML/DDL/EXEC keywords; rows capped at maxItems. Customer key: meditrade UGYFEL.VEVOKOD = TT vectorykod (NOT UGYFELKOD - join SZAMLA/TETEL/keszletf through UGYFEL); alphavet UGYFEL.UGYFELKOD = TT vectorykod. Use @name parameters with the params object instead of inlining values. Prefer the curated vectory-*/ap2-* tools when they fit.",
-    toolset: "vectory-sql",
+    toolset: "vectory",
     provider: "sql",
     scopes: SCOPES,
     method: "GET",

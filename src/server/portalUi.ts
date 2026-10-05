@@ -36,7 +36,7 @@ export interface PortalState {
 
 /** One integrated platform as shown on the landing page. */
 export interface PlatformCapabilities {
-  key: "m365" | "salesforce" | "tt";
+  key: "m365" | "salesforce" | "tt" | "vectory";
   name: string;
   /** How the AI gets access on this platform (login model). */
   access: string;
@@ -127,32 +127,38 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): { platforms: Plat
     });
   }
 
-  // --- TT: Vectory / AP2 / Alphaportal ---------------------------------------
-  if (on.has("vectory") || on.has("vectory-sql")) {
-    const ttRead = on.has("vectory")
-      ? [
+  // --- TT: termék­támogatási rendszer (adatai részben a Vectoryból) ----------
+  if (on.has("tt")) {
+    platforms.push({
+      key: "tt",
+      name: "TT – terméktámogatás",
+      access: "A TT a terméktámogatási rendszerünk és adatbázisa; az ügyféladatai részben a Vectoryból jönnek. A gateway közös TT API-kulccsal éri el — ez nem személyes jogosultság, ezért az admin dönti el, ki kapja meg a tt toolsetet. Minden hívás naplózva a te neveddel.",
+      read: [
           "TT MCP: ügyfélkeresés név, település, Vectory-kód, adószám, e-mail vagy telefon alapján; teljes ügyfélkép egy hívással (adatlap, jegyzetek, Vectory, AP2-számlák, ticketek, hívások, változásnapló, befizetések)",
           "TT MCP: Alphaportal ticketek és kommentek, WenzTool hívások, változásnapló, lejáró fordulónapok, licenc-audit, ügyfélstatisztika, csapatjegyzetek",
-        ]
-      : [];
-    const sqlRead = on.has("vectory-sql")
-      ? [
+      ],
+      write: [],
+      readOnlyNote: "Csak olvasás: a gateway a TT-be nem ír.",
+    });
+  }
+
+  // --- Vectory: az ERP-nk -----------------------------------------------------
+  if (on.has("vectory")) {
+    platforms.push({
+      key: "vectory",
+      name: "Vectory ERP",
+      access: "A Vectory az ERP-nk. A gateway a replikát egy csak olvasó SQL-loginnal éri el — ez nem személyes jogosultság, ezért az admin dönti el, ki kapja meg a vectory toolsetet. Minden hívás naplózva a te neveddel.",
+      read: [
           "Vectory SQL (közvetlen, csak olvasó login): ügyfélkeresés és ügyfélkártya kontaktokkal, licencekkel, képviselőkkel; számlák sztornó-státusszal és fizetettséggel, számlatételek árréssel és szoftver-kategóriával, szoftver-lefedettség és licencszám, forgalom és ügyfélszint, befizetés dátuma, termékek listaárral",
           "AP2 (alphavet): számlák fizetési móddal, számlatételek EAN-kóddal, ÁFA-val, lejárattal; szállítólevél-tételek",
           "Ellenőrzött szabad SELECT a replikán (egyetlen lekérdezés, sorlimit, tiltott módosító kulcsszavak)",
-        ]
-      : [];
-    platforms.push({
-      key: "tt",
-      name: "Vectory / AP2",
-      access: "A gateway közös hozzáféréssel éri el (TT MCP API-kulcs, illetve csak olvasó SQL-login a Vectory replikához) — ez nem személyes jogosultság, ezért az admin dönti el, ki kapja meg a vectory és vectory-sql toolsetet. Minden hívás naplózva a te neveddel.",
-      read: [...ttRead, ...sqlRead],
+      ],
       write: [],
       readOnlyNote: "Csak olvasás: a gateway sem a Vectory (meditrade), sem az alphavet adatbázisba nem ír.",
     });
   }
   // Future-proofing: any toolset without a curated line above still shows up.
-  const covered: Toolset[] = ["gateway", "mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write", "salesforce-delete", "vectory", "vectory-sql"];
+  const covered: Toolset[] = ["gateway", "mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write", "salesforce-delete", "tt", "vectory"];
   for (const t of on) {
     if (covered.includes(t)) continue;
     const reads = enabledDefs.filter((d) => d.toolset === t && !d.write).length;
@@ -347,7 +353,7 @@ function renderAccessCard(s: PortalState): string {
 
 /** One platform block inside the access card. */
 function renderPlatformCapabilities(p: PlatformCapabilities): string {
-  const ico = p.key === "salesforce" ? `<span class="ico sf">S</span>` : p.key === "tt" ? `<span class="ico tt">V</span>` : `<span class="ico m365">M</span>`;
+  const ico = p.key === "salesforce" ? `<span class="ico sf">S</span>` : p.key === "tt" ? `<span class="ico tt">T</span>` : p.key === "vectory" ? `<span class="ico tt">V</span>` : `<span class="ico m365">M</span>`;
   return `
   <div class="platform">
     <h3>${ico}${esc(p.name)}</h3>

@@ -147,8 +147,8 @@ export const ADMIN_HTML = `<!doctype html>
     <ul id="s-sfchecks" class="muted" style="margin:.4rem 0 0; padding-left:1.2rem"></ul>
   </fieldset>
   <fieldset>
-    <legend>TT MCP — Vectory / AP2 (opcionális)</legend>
-    <p class="muted" style="margin-top:0">Ha kitöltöd, megjelenik a <code>vectory</code> toolset: a TT MCP-szerver (tt.dokiforvet.hu) tooljai a gatewayen keresztül —
+    <legend>TT MCP — terméktámogatási rendszer (opcionális)</legend>
+    <p class="muted" style="margin-top:0">Ha kitöltöd, megjelenik a <code>tt</code> toolset: a TT (terméktámogatási rendszer, ügyféladatai részben a Vectoryból) MCP-szerver (tt.dokiforvet.hu) tooljai a gatewayen keresztül —
     ügyfélkeresés, teljes ügyfélkép, Vectory-számlák és tételek, AP2-számlák, Alphaportal ticketek, befizetések, licenc-audit. <b>Csak olvasás.</b>
     A TT-t közös API-kulccsal éri el a gateway (nem személyes jogosultság), ezért a toolsetet a Felhasználók fülön érdemes név szerint kiosztani.
     A toollista a TT-ről töltődik be induláskor és mentéskor. Üresen hagyott kulcs = integráció kikapcsolva.</p>
@@ -159,8 +159,8 @@ export const ADMIN_HTML = `<!doctype html>
     <div id="s-tttools" class="muted" style="margin-top:.4rem; font-size:.8rem"></div>
   </fieldset>
   <fieldset>
-    <legend>Vectory SQL replika — közvetlen, csak olvasás (opcionális)</legend>
-    <p class="muted" style="margin-top:0">Ha kitöltöd, megjelenik a <code>vectory-sql</code> toolset: paraméterezett lekérdezések közvetlenül a Vectory replikán
+    <legend>Vectory ERP — SQL replika, közvetlen, csak olvasás (opcionális)</legend>
+    <p class="muted" style="margin-top:0">Ha kitöltöd, megjelenik a <code>vectory</code> toolset (az ERP): paraméterezett lekérdezések közvetlenül a Vectory replikán
     (<code>meditrade</code>, ugyanazon a kapcsolaton az <code>alphavet.dbo.*</code> táblák is): ügyfélkeresés, ügyfélkártya kontaktokkal és licencekkel, számlák sztornó-státusszal,
     számlatételek szoftver-kategóriával, szoftver-lefedettség, forgalom és ügyfélszint, befizetés dátuma, termékkeresés, AP2-számlák és tételek, plusz egy ellenőrzött szabad SELECT.
     <b>Csak olvasás:</b> a gateway minden lekérdezést ellenőriz (egyetlen SELECT, tiltott kulcsszavak nélkül, sorlimit), de a védelem alapja a
@@ -355,7 +355,7 @@ async function loadSettings(){
   const tt = s.tt || {};
   document.getElementById('s-ttUrl').value = tt.url || '';
   document.getElementById('s-ttKey').placeholder = tt.apiKeySet ? '******** (változatlan, ha üresen hagyod)' : 'Mcp:ApiKey';
-  document.getElementById('s-ttState').textContent = !tt.configured ? 'TT integráció kikapcsolva' : tt.error ? 'TT hiba: ' + tt.error : 'vectory toolset aktív ✓ (' + (tt.toolCount||0) + ' tool)';
+  document.getElementById('s-ttState').textContent = !tt.configured ? 'TT integráció kikapcsolva' : tt.error ? 'TT hiba: ' + tt.error : 'tt toolset aktív ✓ (' + (tt.toolCount||0) + ' tool)';
   document.getElementById('s-tttools').textContent = (tt.tools || []).join(', ');
   const sq = s.sql || {};
   document.getElementById('s-sqlServer').value = sq.server || '';
@@ -364,7 +364,7 @@ async function loadSettings(){
   document.getElementById('s-sqlUser').value = sq.user || '';
   document.getElementById('s-sqlPassword').placeholder = sq.passwordSet ? '******** (változatlan, ha üresen hagyod)' : 'jelszó';
   document.getElementById('s-sqlEncrypt').checked = !!sq.encrypt;
-  document.getElementById('s-sqlState').textContent = sq.configured ? 'vectory-sql toolset aktív ✓' : 'Vectory SQL integráció kikapcsolva';
+  document.getElementById('s-sqlState').textContent = sq.configured ? 'vectory toolset aktív ✓' : 'Vectory ERP (SQL) integráció kikapcsolva';
   TOOLSETS_AVAILABLE = s.toolsetsAvailable || [];
   renderToolsetChecks(document.getElementById('s-toolsets'), 'ts', s.enabledToolsets || []);
   const dua = s.defaultUserAccess || { toolsets: null, readOnly: false };

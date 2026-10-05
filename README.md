@@ -116,7 +116,7 @@ Claude Desktop / Claude Code: ugyanez az URL remote MCP-ként, vagy lokálisan s
 
 ## Vectory / AP2 (TT MCP, opcionális)
 
-Toolset `vectory`, provider `tt` (`src/tt/client.ts`, `src/tools/endpoints/tt.ts`): a gateway MCP-kliensként
+Toolset `tt` (a TT a terméktámogatási rendszerünk, ügyféladatai részben a Vectoryból), provider `tt` (`src/tt/client.ts`, `src/tools/endpoints/tt.ts`): a gateway MCP-kliensként
 csatlakozik a TT MCP-szerverhez (`https://tt.dokiforvet.hu/mcp`, közös `Mcp:ApiKey`), induláskor és a
 beállítások mentésekor lekéri a toollistát, és `tt-` előtaggal (aláhúzás → kötőjel) továbbadja: ügyfélkeresés,
 teljes ügyfélkép, Vectory-számlák/tételek/termékek, AP2-számlák/tételek/ticketek, befizetések, licenc-audit stb.
@@ -126,7 +126,7 @@ személyes jogosultság, ezért a toolsetet a felhasználói jogosultságokkal �
 
 ## Vectory SQL replika (közvetlen, csak olvasás, opcionális)
 
-Toolset `vectory-sql`, provider `sql` (`src/sql/client.ts`, `src/tools/endpoints/vectorySql.ts`): `mssql`
+Toolset `vectory` (a Vectory ERP), provider `sql` (`src/sql/client.ts`, `src/tools/endpoints/vectorySql.ts`): `mssql`
 pool a Vectory replikához (`sqlreplica.alpha-vet.hu`, `meditrade`, cross-db `alphavet.dbo.*`), csak olvasó
 loginnal. Curated, paraméterezett toolok (ügyfélkeresés, ügyfélkártya, számlák sztornó-státusszal,
 tételek szoftver-kategóriával, szoftver-lefedettség, forgalom/ügyfélszint, befizetés dátuma, termékek,

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { AppConfig } from "./config.js";
+import { TOOLSET_SCHEMA, migrateToolsetList } from "./toolsetMigration.js";
 
 /**
  * Admin-editable settings persisted to data/settings.json.
@@ -36,6 +37,8 @@ export interface MutableSettings {
   sqlUser?: string;
   sqlPassword?: string;
   sqlEncrypt?: boolean;
+  /** Toolset naming version of the stored lists (see toolsetMigration.ts). */
+  toolsetSchema?: number;
 }
 
 export class SettingsStore {
@@ -50,6 +53,21 @@ export class SettingsStore {
         this.settings = {};
       }
     }
+  }
+
+  /** True when stored toolset lists (here and in users.json) still use old names. */
+  needsToolsetMigration(): boolean {
+    return (this.settings.toolsetSchema ?? 1) < TOOLSET_SCHEMA;
+  }
+
+  /** Rename stored toolset lists; call AFTER users.json was migrated (this sets the marker). */
+  migrateToolsets(): void {
+    const s = this.settings;
+    this.save({
+      ...(s.enabledToolsets !== undefined ? { enabledToolsets: migrateToolsetList(s.enabledToolsets) } : {}),
+      ...(s.defaultUserToolsets !== undefined ? { defaultUserToolsets: migrateToolsetList(s.defaultUserToolsets) } : {}),
+      toolsetSchema: TOOLSET_SCHEMA,
+    });
   }
 
   get(): MutableSettings {

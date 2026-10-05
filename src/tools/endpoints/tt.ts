@@ -4,7 +4,7 @@ import type { TtConfig } from "../../config.js";
 import { TtMcpClient, type TtTool } from "../../tt/client.js";
 
 /**
- * Toolset "vectory": the TT MCP server's tools re-exposed through the gateway
+ * Toolset "tt": the TT (product-support system) MCP server's tools re-exposed through the gateway
  * (provider "tt"). Discovered at startup / when the admin saves the TT
  * settings, so the list follows whatever TT publishes. Every TT tool is a
  * read-only query over Vectory (meditrade), AP2/alphavet invoices and
@@ -50,8 +50,8 @@ function ttEndpoint(client: TtMcpClient, t: TtTool): EndpointDef {
   const name = ttToolName(t.name);
   return {
     name,
-    description: `[TT - Vectory / AP2, read-only] ${t.description ?? t.name}`.trim() + " Start with tt-ugyfel-kereses to get the clinicId, then call the others with it.",
-    toolset: "vectory",
+    description: `[TT product support (data partly from Vectory), read-only] ${t.description ?? t.name}`.trim() + " Start with tt-ugyfel-kereses to get the clinicId, then call the others with it.",
+    toolset: "tt",
     provider: "tt",
     scopes: ["TT MCP API key (shared)"],
     method: "POST",

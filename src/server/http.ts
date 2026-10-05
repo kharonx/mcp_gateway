@@ -21,11 +21,12 @@ import type { Toolset, ToolContext } from "../tools/types.js";
 import { SettingsStore, isEntraConfigured, isSalesforceConfigured, isTtConfigured, isSqlConfigured, type MutableSettings } from "../settings.js";
 import { SalesforceAuth } from "../salesforce/auth.js";
 import { UserRegistry } from "../users.js";
+import { TOOLSET_SCHEMA, migrateToolsetList } from "../toolsetMigration.js";
 import type { AppConfig } from "../config.js";
 
 const ALL_TOOLSETS: Toolset[] = [
+  "tt",
   "vectory",
-  "vectory-sql",
   "salesforce",
   "salesforce-write",
   "salesforce-delete",
@@ -84,6 +85,16 @@ const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
 export async function runHttp(baseCfg: AppConfig): Promise<void> {
   const store = new SettingsStore(path.resolve("data", "settings.json"));
+  // Everyone who signed in (portal or MCP) + admin rights.
+  const users = new UserRegistry(path.resolve("data", "users.json"));
+  process.on("beforeExit", () => users.flush());
+  // One-time toolset rename (TT proxy "vectory" -> "tt", ERP "vectory-sql" -> "vectory").
+  // users.json first; the settings marker is written last, so a crash in between just reruns it.
+  if (store.needsToolsetMigration()) {
+    const n = users.migrateToolsets(migrateToolsetList);
+    store.migrateToolsets();
+    console.log(`Toolset names migrated to schema ${TOOLSET_SCHEMA} (${n} user profile(s)).`);
+  }
   const audit = new AuditLogger(baseCfg.auditDir);
 
   // Runtime state - rebuilt whenever settings change from the admin UI.
@@ -136,9 +147,6 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
   const oauthProxy = new OAuthProxy(() => cfg, path.resolve("data"));
   // Optional Salesforce: per-user OAuth connections keyed by Entra oid.
   const sfAuth = new SalesforceAuth(() => cfg, path.resolve("data"));
-  // Everyone who signed in (portal or MCP) + admin rights.
-  const users = new UserRegistry(path.resolve("data", "users.json"));
-  process.on("beforeExit", () => users.flush());
 
   // ── Web portal sessions (landing-page Microsoft login) ──────────────
   const sessions = new Map<string, WebSession>();

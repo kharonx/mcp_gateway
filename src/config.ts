@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import path from "node:path";
+import { migrateEnvToolsetList } from "./toolsetMigration.js";
 
 dotenv.config();
 
@@ -78,10 +79,10 @@ export function loadConfig(argv: string[] = process.argv.slice(2)): AppConfig {
     mode,
     port: num(process.env.PORT, 3000),
     baseUrl: (process.env.BASE_URL ?? `http://localhost:${num(process.env.PORT, 3000)}`).replace(/\/+$/, ""),
-    enabledToolsets: toolsets ? toolsets.split(",").map((s) => s.trim()).filter(Boolean) : null,
+    enabledToolsets: migrateEnvToolsetList(toolsets ? toolsets.split(",").map((s) => s.trim()).filter(Boolean) : null),
     readOnly: (process.env.READ_ONLY ?? "false").toLowerCase() === "true",
     defaultUserAccess: {
-      toolsets: (process.env.DEFAULT_USER_TOOLSETS ?? "").trim() ? (process.env.DEFAULT_USER_TOOLSETS as string).split(",").map((s) => s.trim()).filter(Boolean) : null,
+      toolsets: migrateEnvToolsetList((process.env.DEFAULT_USER_TOOLSETS ?? "").trim() ? (process.env.DEFAULT_USER_TOOLSETS as string).split(",").map((s) => s.trim()).filter(Boolean) : null),
       readOnly: (process.env.DEFAULT_USER_READ_ONLY ?? "false").toLowerCase() === "true",
     },
     defaultPageItems: num(process.env.DEFAULT_PAGE_ITEMS, 50),
