@@ -22,6 +22,8 @@ export interface AuditEntry {
   recipients?: string[];
   cc?: string[];
   subject?: string;
+  /** Attachment names (or driveItem ids) of a composed mail. */
+  attachments?: string[];
   messageId?: string;
   result?: string;
 }

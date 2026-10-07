@@ -27,6 +27,16 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-10-07",
+    commit: "HEADHASH",
+    title: "Csatolmány a levelekben; TT és Vectory külön",
+    items: [
+      "Levélküldés és piszkozat csatolmánnyal: a create-draft-email, send-mail, create-shared-mailbox-draft és send-shared-mailbox-mail új attachments mezője OneDrive- vagy SharePoint-fájlt (itemId, driveId), az AI által írt szöveges fájlt (például CSV, ékezethelyesen Excelhez) vagy base64 tartalmat fogad. A fájlt a gateway tölti le a te jogosultságoddal; a nagy fájlok darabolva töltődnek fel, üzenetenként legfeljebb 25 MB.",
+      "Az auditnapló a levél csatolmányainak nevét is rögzíti.",
+      "A TT (terméktámogatási rendszerünk, ügyféladatai részben a Vectoryból) saját tt toolsetet kapott; a vectory név mostantól magát az ERP-t jelenti (a korábbi vectory-sql, csak olvasó replika-lekérdezések). A meglévő beállítások és felhasználói jogosultságok induláskor automatikusan átíródnak az új nevekre; a portálon két külön kártya jelenik meg.",
+    ],
+  },
+  {
     date: "2026-09-28",
     commit: "a82bfce",
     title: "Kilépési riport: csoportnevek, Teams és tömörebb válasz",

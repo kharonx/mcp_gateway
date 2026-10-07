@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { EndpointDef } from "../types.js";
 import type { AuditEntry } from "../../audit/audit.js";
+import type { ToolContext } from "../types.js";
+import { attachmentInput, composeWithAttachments, resolveAttachments } from "./mailAttachments.js";
 
 /**
  * The ONLY write surface of the Reporting profile v1: Outlook drafting + sending.
@@ -19,6 +21,7 @@ const composeInput = {
   subject: z.string().describe("Email subject"),
   body: z.string().describe("Email body content"),
   bodyType: z.enum(["HTML", "Text"]).optional().describe("Body content type (default HTML)"),
+  attachments: attachmentInput,
 };
 
 function messagePayload(args: Record<string, any>) {
@@ -32,12 +35,40 @@ function messagePayload(args: Record<string, any>) {
   };
 }
 
+const mailboxBase = (args: Record<string, any>) => (args.mailbox ? `/users/${encodeURIComponent(args.mailbox)}` : "/me");
+
+/** Draft: plain POST without attachments, attachment-aware path otherwise. */
+async function createDraft(args: Record<string, any>, ctx: ToolContext) {
+  const files = await resolveAttachments(args.attachments, ctx);
+  if (!files.length) return ctx.graph.request("POST", `${mailboxBase(args)}/messages`, { body: messagePayload(args) });
+  return composeWithAttachments(ctx, mailboxBase(args), messagePayload(args), files, { send: false });
+}
+
+async function sendNow(args: Record<string, any>, ctx: ToolContext) {
+  const files = await resolveAttachments(args.attachments, ctx);
+  if (!files.length) {
+    return ctx.graph.request("POST", `${mailboxBase(args)}/sendMail`, {
+      body: { message: messagePayload(args), saveToSentItems: args.saveToSentItems ?? true },
+    });
+  }
+  return composeWithAttachments(ctx, mailboxBase(args), messagePayload(args), files, {
+    send: true,
+    saveToSentItems: args.saveToSentItems,
+  });
+}
+
+const attachmentNames = (args: Record<string, any>) =>
+  Array.isArray(args.attachments) && args.attachments.length
+    ? { attachments: args.attachments.map((a: any) => a.name || a.itemId) }
+    : {};
+
 function composeAudit(args: Record<string, any>, result: any): Partial<AuditEntry> {
   return {
     sender: args.mailbox ?? "me",
     recipients: args.to,
     cc: args.cc,
     subject: args.subject,
+    ...attachmentNames(args),
     messageId: result?.id ?? result?.internetMessageId,
     result: result ? "ok" : "error",
   };
@@ -56,7 +87,7 @@ export const mailWriteEndpoints: EndpointDef[] = [
   {
     name: "create-draft-email",
     description:
-      "Create a DRAFT email in the signed-in user's Drafts folder. Does NOT send anything - use send-draft-email (with explicit user approval) to send it.",
+      "Create a DRAFT email in the signed-in user's Drafts folder, optionally with attachments (OneDrive/SharePoint file, text you wrote, or base64). Does NOT send anything - use send-draft-email (with explicit user approval) to send it.",
     toolset: "mail-write",
     write: true,
     scopes: ["Mail.ReadWrite"],
@@ -65,6 +96,7 @@ export const mailWriteEndpoints: EndpointDef[] = [
     resourceType: "mailMessage",
     extraInput: { ...composeInput, importance: z.enum(["low", "normal", "high"]).optional() },
     buildBody: messagePayload,
+    handler: createDraft,
     auditWrite: composeAudit,
   },
   {
@@ -85,7 +117,7 @@ export const mailWriteEndpoints: EndpointDef[] = [
   {
     name: "send-mail",
     description:
-      "Compose and SEND an email in one step as the signed-in user. WRITE operation - requires confirm=true and explicit user approval. Prefer create-draft-email + user review for report emails.",
+      "Compose and SEND an email in one step as the signed-in user, optionally with attachments (OneDrive/SharePoint file, text you wrote, or base64). WRITE operation - requires confirm=true and explicit user approval. Prefer create-draft-email + user review for report emails.",
     toolset: "mail-write",
     write: true,
     scopes: ["Mail.Send"],
@@ -99,6 +131,7 @@ export const mailWriteEndpoints: EndpointDef[] = [
       saveToSentItems: z.boolean().optional().describe("Save to Sent Items (default true)"),
     },
     buildBody: (args) => ({ message: messagePayload(args), saveToSentItems: args.saveToSentItems ?? true }),
+    handler: sendNow,
     auditWrite: composeAudit,
   },
   {
@@ -149,7 +182,7 @@ export const mailWriteEndpoints: EndpointDef[] = [
   // ── Shared mailbox variants ─────────────────────────────────────────
   {
     name: "create-shared-mailbox-draft",
-    description: "Create a DRAFT in a shared mailbox. Does NOT send.",
+    description: "Create a DRAFT in a shared mailbox, optionally with attachments. Does NOT send.",
     toolset: "shared-mail-write",
     write: true,
     scopes: ["Mail.ReadWrite.Shared"],
@@ -159,11 +192,12 @@ export const mailWriteEndpoints: EndpointDef[] = [
     resourceType: "mailMessage",
     extraInput: { ...composeInput, importance: z.enum(["low", "normal", "high"]).optional() },
     buildBody: messagePayload,
+    handler: createDraft,
     auditWrite: composeAudit,
   },
   {
     name: "send-shared-mailbox-mail",
-    description: "Compose and SEND an email from a shared mailbox. Requires confirm=true and explicit user approval.",
+    description: "Compose and SEND an email from a shared mailbox, optionally with attachments. Requires confirm=true and explicit user approval.",
     toolset: "shared-mail-write",
     write: true,
     scopes: ["Mail.Send.Shared"],
@@ -177,6 +211,7 @@ export const mailWriteEndpoints: EndpointDef[] = [
       saveToSentItems: z.boolean().optional().describe("Save to Sent Items (default true)"),
     },
     buildBody: (args) => ({ message: messagePayload(args), saveToSentItems: args.saveToSentItems ?? true }),
+    handler: sendNow,
     auditWrite: composeAudit,
   },
   {
