@@ -28,7 +28,7 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-10-07",
-    commit: "HEADHASH",
+    commit: "09356c7",
     title: "Csatolmány a levelekben; TT és Vectory külön",
     items: [
       "Levélküldés és piszkozat csatolmánnyal: a create-draft-email, send-mail, create-shared-mailbox-draft és send-shared-mailbox-mail új attachments mezője OneDrive- vagy SharePoint-fájlt (itemId, driveId), az AI által írt szöveges fájlt (például CSV, ékezethelyesen Excelhez) vagy base64 tartalmat fogad. A fájlt a gateway tölti le a te jogosultságoddal; a nagy fájlok darabolva töltődnek fel, üzenetenként legfeljebb 25 MB.",
