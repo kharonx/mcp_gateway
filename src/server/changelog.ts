@@ -28,7 +28,7 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-10-08",
-    commit: "HEADHASH",
+    commit: "e3f6c36",
     title: "Entra-csoportok tulajdonosokkal; csatolmány a levelekben; TT és Vectory külön",
     items: [
       "Új címtár-toolok (users toolset): a list-groups a szervezet összes Entra (AD) csoportját listázza – Teams, M365-csoport, biztonsági csoport, levelezésre képes biztonsági csoport, terjesztési lista – a tulajdonosaikkal együtt, típus szerinti szűréssel és a tulajdonos nélküli csoportok számával. A get-group egy csoport adatait és tulajdonosait adja, a list-group-owners a teljes tulajdonoslistát (20 fölött is), a list-group-members a közvetlen tagokat.",
