@@ -7,9 +7,9 @@ Principle: **read broadly, write narrowly** - the WRITE surface is Outlook mail
 Salesforce Connected App is configured - Salesforce activity/record writes. Every
 outbound send and every Salesforce write is gated by `confirm=true`.
 
-Total tools: **134** (24 WRITE, 110 READ)
+Total tools: **138** (24 WRITE, 114 READ)
 
-Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (6), vectory (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
+Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (10), vectory (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
 
 | MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -117,6 +117,10 @@ Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-wr
 | `get-user-account-status-history` | users | READ | GET | `/auditLogs/directoryAudits` | AuditLog.Read.All, Directory.Read.All | enabled | paginated, time-range, search |
 | `list-directory-audits` | users | READ | GET | `/auditLogs/directoryAudits` | AuditLog.Read.All, Directory.Read.All | enabled | paginated, time-range |
 | `search-users` | users | READ | GET | `/users` | User.Read.All | enabled | paginated, search |
+| `list-groups` | users | READ | GET | `/groups` | GroupMember.Read.All, Directory.Read.All | enabled | paginated, search |
+| `get-group` | users | READ | GET | `/groups/{groupId}` | GroupMember.Read.All, Directory.Read.All | enabled |  |
+| `list-group-owners` | users | READ | GET | `/groups/{groupId}/owners` | GroupMember.Read.All, Directory.Read.All | enabled | paginated |
+| `list-group-members` | users | READ | GET | `/groups/{groupId}/members` | GroupMember.Read.All, Directory.Read.All | enabled | paginated |
 | `get-user-access-report` | users | READ | GET | `/users/{user}/access-report` | Directory.Read.All, GroupMember.Read.All, Sites.Read.All, Files.Read.All, Team.ReadBasic.All | enabled |  |
 | `vectory-find-customer` | vectory | READ | GET | `/vectory/customers` | Vectory SQL (read-only login) | enabled |  |
 | `vectory-customer` | vectory | READ | GET | `/vectory/customers/{vevokod}` | Vectory SQL (read-only login) | enabled |  |

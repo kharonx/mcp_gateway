@@ -27,10 +27,11 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    date: "2026-10-07",
-    commit: "09356c7",
-    title: "Csatolmány a levelekben; TT és Vectory külön",
+    date: "2026-10-08",
+    commit: "HEADHASH",
+    title: "Entra-csoportok tulajdonosokkal; csatolmány a levelekben; TT és Vectory külön",
     items: [
+      "Új címtár-toolok (users toolset): a list-groups a szervezet összes Entra (AD) csoportját listázza – Teams, M365-csoport, biztonsági csoport, levelezésre képes biztonsági csoport, terjesztési lista – a tulajdonosaikkal együtt, típus szerinti szűréssel és a tulajdonos nélküli csoportok számával. A get-group egy csoport adatait és tulajdonosait adja, a list-group-owners a teljes tulajdonoslistát (20 fölött is), a list-group-members a közvetlen tagokat.",
       "Levélküldés és piszkozat csatolmánnyal: a create-draft-email, send-mail, create-shared-mailbox-draft és send-shared-mailbox-mail új attachments mezője OneDrive- vagy SharePoint-fájlt (itemId, driveId), az AI által írt szöveges fájlt (például CSV, ékezethelyesen Excelhez) vagy base64 tartalmat fogad. A fájlt a gateway tölti le a te jogosultságoddal; a nagy fájlok darabolva töltődnek fel, üzenetenként legfeljebb 25 MB.",
       "Az auditnapló a levél csatolmányainak nevét is rögzíti.",
       "A TT (terméktámogatási rendszerünk, ügyféladatai részben a Vectoryból) saját tt toolsetet kapott; a vectory név mostantól magát az ERP-t jelenti (a korábbi vectory-sql, csak olvasó replika-lekérdezések). A meglévő beállítások és felhasználói jogosultságok induláskor automatikusan átíródnak az új nevekre; a portálon két külön kártya jelenik meg.",

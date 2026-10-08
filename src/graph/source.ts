@@ -125,6 +125,16 @@ function userSource(u: AnyObj): SourceInfo {
   };
 }
 
+function groupSource(g: AnyObj): SourceInfo {
+  return {
+    sourceType: "group",
+    sourceId: g.id,
+    title: g.displayName,
+    mail: g.mail,
+    createdDateTime: g.createdDateTime,
+  };
+}
+
 function directoryAuditSource(a: AnyObj): SourceInfo {
   const target = Array.isArray(a.targetResources) ? a.targetResources[0] : undefined;
   return {
@@ -152,6 +162,7 @@ const MAPPERS: Record<string, (o: AnyObj) => SourceInfo> = {
   onlineMeeting: meetingSource,
   site: siteSource,
   user: userSource,
+  group: groupSource,
 };
 
 /** Attach a _source block to a single object (mutating copy). */

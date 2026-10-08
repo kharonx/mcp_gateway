@@ -13,6 +13,7 @@ import { onedriveEndpoints } from "./onedrive.js";
 import { loopEndpoints } from "./loop.js";
 import { searchEndpoints } from "./search.js";
 import { usersEndpoints } from "./users.js";
+import { groupsEndpoints } from "./groups.js";
 import { accessReportEndpoints } from "./accessReport.js";
 import { vectorySqlEndpoints } from "./vectorySql.js";
 import { salesforceEndpoints } from "./salesforce.js";
@@ -36,6 +37,7 @@ export const allEndpoints: EndpointDef[] = [
   ...loopEndpoints,
   ...searchEndpoints,
   ...usersEndpoints,
+  ...groupsEndpoints,
   ...accessReportEndpoints,
   ...vectorySqlEndpoints,
   ...salesforceEndpoints,
