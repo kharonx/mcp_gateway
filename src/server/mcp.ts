@@ -14,7 +14,7 @@ const TOOLSET_LABELS: Record<Toolset, string> = {
   tt: "TT - product-support system (its customer data comes partly from Vectory) / AP2 / Alphaportal: customer search, customer 360, Vectory invoices and items, AP2 invoices and tickets, payments, licence audit (read-only, via the TT MCP server; start with tt-ugyfel-kereses)",
   mail: "Outlook mail - read",
   "shared-mail": "shared mailboxes - read",
-  "mail-write": "Outlook mail - draft/send/reply/forward (WRITE)",
+  "mail-write": "Outlook mail - draft/send/reply/forward, mark read (WRITE)",
   "shared-mail-write": "shared mailboxes - draft/send/reply/forward (WRITE)",
   calendar: "calendar, colleagues' free/busy, meeting-time suggestions - read",
   "calendar-write": "calendar events - create/update/respond (WRITE)",

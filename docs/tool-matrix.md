@@ -7,9 +7,9 @@ Principle: **read broadly, write narrowly** - the WRITE surface is Outlook mail
 Salesforce Connected App is configured - Salesforce activity/record writes. Every
 outbound send and every Salesforce write is gated by `confirm=true`.
 
-Total tools: **138** (24 WRITE, 114 READ)
+Total tools: **139** (25 WRITE, 114 READ)
 
-Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (10), vectory (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
+Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (10), vectory (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
 
 | MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -26,6 +26,7 @@ Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (6), shared-mail-wr
 | `list-shared-mailbox-folder-messages` | shared-mail | READ | GET | `/users/{mailbox}/mailFolders/{folderId}/messages` | Mail.Read.Shared | enabled | paginated, time-range, search |
 | `get-shared-mailbox-message` | shared-mail | READ | GET | `/users/{mailbox}/messages/{messageId}` | Mail.Read.Shared | enabled |  |
 | `get-shared-mailbox-attachment-content` | shared-mail | READ | GET | `/users/{mailbox}/messages/{messageId}/attachments/{attachmentId}/$value` | Mail.Read.Shared | enabled | content-download |
+| `mark-mail-read` | mail-write | **WRITE** | PATCH | `/me/messages/{messageId}` | Mail.ReadWrite | enabled |  |
 | `create-draft-email` | mail-write | **WRITE** | POST | `/me/messages` | Mail.ReadWrite | enabled |  |
 | `send-draft-email` | mail-write | **WRITE** | POST | `/me/messages/{messageId}/send` | Mail.Send | enabled | confirm-required |
 | `send-mail` | mail-write | **WRITE** | POST | `/me/sendMail` | Mail.Send | enabled | confirm-required |

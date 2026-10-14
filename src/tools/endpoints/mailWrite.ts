@@ -85,6 +85,21 @@ function replyAudit(args: Record<string, any>, result: any): Partial<AuditEntry>
 
 export const mailWriteEndpoints: EndpointDef[] = [
   {
+    name: "mark-mail-read",
+    description:
+      "Mark a message in the signed-in user's mailbox as read (isRead=true, default) or unread (isRead=false). Changes only the read flag - nothing is sent, moved or deleted.",
+    toolset: "mail-write",
+    write: true,
+    scopes: ["Mail.ReadWrite"],
+    method: "PATCH",
+    path: "/me/messages/{messageId}",
+    pathParamDescriptions: { messageId: "Message id (from list-mail-messages or get-mail-message)" },
+    resourceType: "mailMessage",
+    extraInput: { isRead: z.boolean().optional().describe("true = mark as read (default), false = mark as unread") },
+    buildBody: (args) => ({ isRead: args.isRead ?? true }),
+    auditWrite: (args, result) => ({ messageId: args.messageId, result: result ? "ok" : "error" }),
+  },
+  {
     name: "create-draft-email",
     description:
       "Create a DRAFT email in the signed-in user's Drafts folder, optionally with attachments (OneDrive/SharePoint file, text you wrote, or base64). Does NOT send anything - use send-draft-email (with explicit user approval) to send it.",
