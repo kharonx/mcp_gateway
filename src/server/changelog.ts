@@ -27,6 +27,15 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-10-14",
+    commit: "a8c9aed",
+    title: "Levél olvasottnak jelölése",
+    items: [
+      "Új író tool (mail-write toolset): a mark-mail-read egy levelet olvasottnak (vagy isRead=false esetén olvasatlannak) jelöl a saját postafiókodban. Csak az olvasottság jelzőjét állítja: nem küld, nem helyez át és nem töröl semmit; az auditnapló rögzíti.",
+      "Muki ezzel jelöli olvasottnak a levelet, amikor a Mai tervben a Feladat gombbal feladatot készítesz belőle a Feladatkezelőben.",
+    ],
+  },
+  {
     date: "2026-10-08",
     commit: "e3f6c36",
     title: "Entra-csoportok tulajdonosokkal; csatolmány a levelekben; TT és Vectory külön",
