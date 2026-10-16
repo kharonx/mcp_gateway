@@ -27,7 +27,7 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    date: "2026-10-14",
+    date: "2026-10-16",
     commit: "a8c9aed",
     title: "Levél olvasottnak jelölése",
     items: [
