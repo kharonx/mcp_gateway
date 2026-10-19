@@ -28,9 +28,11 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-10-19",
-    commit: "3aed846",
-    title: "Naptáresemény törlése (opcionális)",
+    commit: "8ffd9f8",
+    title: "IMAP-postafiókok csatolása, naptáresemény törlése",
     items: [
+      "Új: külső IMAP-postafiókok (tárhelyszolgáltató, Gmail alkalmazásjelszóval stb.) csatolása a kezdőoldalon, az IMAP-postafiókok csempén. Mindenki a saját fiókjait csatolja, akár többet is; mentés előtt a gateway kipróbálja a bejelentkezést, a jelszót titkosítva tárolja, és az AI soha nem látja.",
+      "Új imap toolset: mappák, levelek listázása és keresése (feladó, címzett, tárgy, szöveg, dátum, olvasatlan), levél és mellékletek olvasása tartalomkinyeréssel. Olvasáskor semmit nem jelöl olvasottnak. Az imap-write toolset (mark-imap-mail-read) csak az olvasottság jelzőjét állítja: küldés, áthelyezés, törlés nincs.",
       "Új, alapból kikapcsolt calendar-delete toolset egyetlen toollal (delete-calendar-event): egy naptáresemény törlése a saját naptáradból. Csak akkor él, ha az admin a toolset-listában kifejezetten bepipálja, és minden törléshez külön jóváhagyás (confirm=true) kell.",
       "Ha te vagy a szervező és vannak résztvevők, a tool lemondja a meetinget: a résztvevők lemondó értesítést kapnak (opcionális üzenettel), így nem marad bent a naptárukban. Résztvevők nélküli saját esemény egyszerűen törlődik (a Törölt elemek közé kerül, Outlookból visszaállítható).",
       "Meghívottként nem töröl: a szervező erről nem értesülne, ezért ilyenkor a meghívó elutasítását ajánlja (respond-to-calendar-event). Kivétel, ha a szervező már lemondta az eseményt. Ismétlődő eseménynél egy előfordulás vagy a teljes sorozat is törölhető. A törölt esemény adatai (tárgy, időpont, résztvevők) az auditnaplóba kerülnek.",
