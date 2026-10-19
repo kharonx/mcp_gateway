@@ -48,7 +48,8 @@ async function vettedAddress(host: string): Promise<string> {
   if (!addrs.length || addrs.some((a) => isBlockedAddress(a.address))) {
     throw new Error(`Az IMAP-szerver (${host}) belső hálózati címre mutat - ilyen szerverhez a gateway nem csatlakozik.`);
   }
-  return addrs[0].address;
+  // A literal IP disables Node's address-family fallback: prefer IPv4 (containers often lack IPv6).
+  return (addrs.find((a) => a.family === 4) ?? addrs[0]).address;
 }
 
 type Conn = Pick<ImapCredentials, "host" | "port" | "security" | "username" | "password">;
@@ -134,7 +135,8 @@ function hasAttachments(node: any): boolean {
 
 export async function listFolders(acc: Conn) {
   return withImap(acc, async (c) => {
-    const list = await c.list({ statusQuery: { messages: true, unseen: true } });
+    // Some servers fail STATUS on \Noselect containers (e.g. [Gmail]) - fall back to a plain LIST.
+    const list = await c.list({ statusQuery: { messages: true, unseen: true } }).catch(() => c.list());
     return list.map((f) => ({
       path: f.path,
       name: f.name,

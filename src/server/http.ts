@@ -154,6 +154,10 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
   const sfAuth = new SalesforceAuth(() => cfg, path.resolve("data"));
   // Optional IMAP: mailboxes each user links on the portal, passwords encrypted under IMAP_ENCRYPTION_KEY.
   const imapStore = new ImapStore(() => cfg.imapEncryptionKey, path.resolve("data"));
+  // Linking only makes sense when this user's profile can actually use the imap tools.
+  const imapUsable = (oid: string) =>
+    isImapConfigured(cfg) &&
+    currentEndpoints().some((d) => d.toolset === "imap" && isToolEnabled(d, cfg, effectiveAccess(users.get(oid), cfg.defaultUserAccess)));
 
   // ── Web portal sessions (landing-page Microsoft login) ──────────────
   const sessions = new Map<string, WebSession>();
@@ -254,7 +258,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
         graphError,
         loginError: typeof req.query.login_error === "string" ? req.query.login_error : undefined,
         sql: { configured: isSqlConfigured(cfg) },
-        imap: isImapConfigured(cfg) && sess?.oid ? { accounts: imapStore.list(sess.oid) } : undefined,
+        imap: sess?.oid && imapUsable(sess.oid) ? { accounts: imapStore.list(sess.oid) } : undefined,
         salesforce: sfConfigured
           ? {
               connected: !!sfInfo,
@@ -307,8 +311,8 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       res.status(401).json({ error: "Előbb jelentkezz be a Microsoft-fiókoddal." });
       return;
     }
-    if (!isImapConfigured(cfg)) {
-      res.status(400).json({ error: "Az IMAP-integráció nincs bekapcsolva ezen a gatewayen (IMAP_ENCRYPTION_KEY)." });
+    if (!imapUsable(sess.oid)) {
+      res.status(400).json({ error: "Az IMAP-postafiókok nincsenek engedélyezve számodra ezen a gatewayen." });
       return;
     }
     if (!req.is("application/json")) {
