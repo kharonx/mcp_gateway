@@ -27,6 +27,16 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-10-19",
+    commit: "3aed846",
+    title: "Naptáresemény törlése (opcionális)",
+    items: [
+      "Új, alapból kikapcsolt calendar-delete toolset egyetlen toollal (delete-calendar-event): egy naptáresemény törlése a saját naptáradból. Csak akkor él, ha az admin a toolset-listában kifejezetten bepipálja, és minden törléshez külön jóváhagyás (confirm=true) kell.",
+      "Ha te vagy a szervező és vannak résztvevők, a tool lemondja a meetinget: a résztvevők lemondó értesítést kapnak (opcionális üzenettel), így nem marad bent a naptárukban. Résztvevők nélküli saját esemény egyszerűen törlődik (a Törölt elemek közé kerül, Outlookból visszaállítható).",
+      "Meghívottként nem töröl: a szervező erről nem értesülne, ezért ilyenkor a meghívó elutasítását ajánlja (respond-to-calendar-event). Kivétel, ha a szervező már lemondta az eseményt. Ismétlődő eseménynél egy előfordulás vagy a teljes sorozat is törölhető. A törölt esemény adatai (tárgy, időpont, résztvevők) az auditnaplóba kerülnek.",
+    ],
+  },
+  {
     date: "2026-10-16",
     commit: "a8c9aed",
     title: "Levél olvasottnak jelölése",
