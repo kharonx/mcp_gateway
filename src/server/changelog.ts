@@ -28,7 +28,7 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-10-19",
-    commit: "8ffd9f8",
+    commit: "994a6f2",
     title: "IMAP-postafiókok csatolása, naptáresemény törlése",
     items: [
       "Új: külső IMAP-postafiókok (tárhelyszolgáltató, Gmail alkalmazásjelszóval stb.) csatolása a kezdőoldalon, az IMAP-postafiókok csempén. Mindenki a saját fiókjait csatolja, akár többet is; mentés előtt a gateway kipróbálja a bejelentkezést, a jelszót titkosítva tárolja, és az AI soha nem látja.",
