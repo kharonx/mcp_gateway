@@ -18,6 +18,7 @@ const TOOLSET_LABELS: Record<Toolset, string> = {
   "shared-mail-write": "shared mailboxes - draft/send/reply/forward (WRITE)",
   calendar: "calendar, colleagues' free/busy, meeting-time suggestions - read",
   "calendar-write": "calendar events - create/update/respond (WRITE)",
+  "calendar-delete": "calendar events - delete ONE event, or cancel it with a notice to attendees when the user is the organizer (WRITE, opt-in toolset, confirm=true per event, name the event to the user first)",
   teams: "Teams chats, channels, members - read",
   "teams-write": "Teams messages - chat/channel/reply (WRITE)",
   meetings: "online meetings, transcripts, recordings, attendance - read",

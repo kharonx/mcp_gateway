@@ -212,8 +212,11 @@ mint amit ő maga meg is tehetne a Salesforce-ban.
 
 - **Nincs** generikus `graph_request(method, url, body)` tool és nincs `$batch` passthrough —
   csak a 86 allowlistelt endpoint érhető el.
-- **Nincs** Files/Sites/OneNote/User/Group write és nincs delete sehol — a Salesforce-írás is
-  kizárólag létrehozás/módosítás.
+- **Nincs** Files/Sites/OneNote/User/Group write. Törlés csak két, alapból kikapcsolt toolsetben van:
+  `salesforce-delete` (lásd fent) és `calendar-delete` — utóbbiban a `delete-calendar-event` egy
+  naptáreseményt töröl; ha a felhasználó a szervező és vannak résztvevők, lemondja (értesítést kapnak),
+  meghívottként pedig nem töröl (helyette elutasítás). Mindkettő csak az `ENABLED_TOOLSETS` / admin
+  toolset-listában kifejezetten bepipálva él, és `confirm=true`-hoz kötött.
 - Draft létrehozása ≠ küldési engedély: minden send/reply/forward `confirm=true`-t követel,
   és a tool-leírás utasítja az AI-t, hogy előbb kérjen explicit felhasználói jóváhagyást.
 - `READ_ONLY=true` env-vel az összes write tool lekapcsolható; `ENABLED_TOOLSETS`-szel

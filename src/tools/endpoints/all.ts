@@ -2,7 +2,7 @@ import type { EndpointDef } from "../types.js";
 import { mailEndpoints } from "./mail.js";
 import { mailWriteEndpoints } from "./mailWrite.js";
 import { calendarEndpoints } from "./calendar.js";
-import { calendarWriteEndpoints } from "./calendarWrite.js";
+import { calendarWriteEndpoints, calendarDeleteEndpoints } from "./calendarWrite.js";
 import { availabilityEndpoints } from "./availability.js";
 import { teamsWriteEndpoints } from "./teamsWrite.js";
 import { teamsEndpoints } from "./teams.js";
@@ -28,6 +28,7 @@ export const allEndpoints: EndpointDef[] = [
   ...calendarEndpoints,
   ...availabilityEndpoints,
   ...calendarWriteEndpoints,
+  ...calendarDeleteEndpoints,
   ...teamsEndpoints,
   ...teamsWriteEndpoints,
   ...meetingsEndpoints,

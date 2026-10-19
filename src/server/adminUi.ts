@@ -108,7 +108,7 @@ export const ADMIN_HTML = `<!doctype html>
   <fieldset>
     <legend>Profil és limitek</legend>
     <label class="f"><input type="checkbox" id="s-readOnly"> Read-only mód (minden írási tool letiltva az egész gatewayen)</label>
-    <div class="muted" style="margin:.3rem 0">Gateway-szinten engedélyezett toolsetek (mind kikapcsolva = az összes engedélyezett; a <code>salesforce-delete</code> csak bepipálva él):</div>
+    <div class="muted" style="margin:.3rem 0">Gateway-szinten engedélyezett toolsetek (mind kikapcsolva = az összes engedélyezett; a <code>salesforce-delete</code> és a <code>calendar-delete</code> csak bepipálva él):</div>
     <div class="checks" id="s-toolsets"></div>
     <div class="muted" style="margin:1rem 0 .3rem"><b>Alapértelmezett felhasználói jogosultság</b> — azokra vonatkozik, akiknek a Felhasználók fülön nincs egyéni profiljuk (új belépők is):</div>
     <label class="f"><input type="radio" name="s-dua-mode" value="all" checked> Minden, a gatewayen engedélyezett toolset</label>

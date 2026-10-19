@@ -83,6 +83,8 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): { platforms: Plat
     );
   }
   if (on.has("calendar-write")) m365Write.push("Naptáresemény létrehozása (Teams-meetingként is), módosítása és meghívó megválaszolása");
+  if (on.has("calendar-delete"))
+    m365Write.push("Naptáresemény törlése — ha te vagy a szervező és vannak résztvevők, lemondást küld nekik; külön, kifejezetten engedélyezett toolset, eseményenkénti jóváhagyással");
   if (on.has("teams-write")) m365Write.push("Teams-üzenet küldése chatbe vagy csatornába, illetve válasz csatornaüzenetre");
 
   // --- Salesforce ---------------------------------------------------------
@@ -158,7 +160,7 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): { platforms: Plat
     });
   }
   // Future-proofing: any toolset without a curated line above still shows up.
-  const covered: Toolset[] = ["gateway", "mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write", "salesforce-delete", "tt", "vectory"];
+  const covered: Toolset[] = ["gateway", "mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "calendar-delete", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write", "salesforce-delete", "tt", "vectory"];
   for (const t of on) {
     if (covered.includes(t)) continue;
     const reads = enabledDefs.filter((d) => d.toolset === t && !d.write).length;

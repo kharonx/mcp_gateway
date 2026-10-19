@@ -21,6 +21,7 @@ export type Toolset =
   | "shared-mail-write"
   | "calendar"
   | "calendar-write"
+  | "calendar-delete"
   | "teams"
   | "teams-write"
   | "meetings"
@@ -31,7 +32,10 @@ export type Toolset =
   | "search"
   | "users";
 
-export const WRITE_TOOLSETS: Toolset[] = ["mail-write", "shared-mail-write", "calendar-write", "teams-write", "salesforce-write", "salesforce-delete"];
+export const WRITE_TOOLSETS: Toolset[] = ["mail-write", "shared-mail-write", "calendar-write", "calendar-delete", "teams-write", "salesforce-write", "salesforce-delete"];
+
+/** Destructive toolsets: active only when listed explicitly in ENABLED_TOOLSETS / the admin toolset list. */
+export const OPT_IN_TOOLSETS: Toolset[] = ["salesforce-delete", "calendar-delete"];
 
 export interface QueryCapabilities {
   filter?: boolean;

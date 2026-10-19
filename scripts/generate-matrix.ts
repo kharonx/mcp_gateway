@@ -6,6 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { allEndpoints } from "../src/tools/endpoints/all.js";
+import { OPT_IN_TOOLSETS } from "../src/tools/types.js";
 
 const rows = allEndpoints.map((d) => {
   const flags: string[] = [];
@@ -15,7 +16,7 @@ const rows = allEndpoints.map((d) => {
   if (d.binary) flags.push("content-download");
   if (d.confirmRequired) flags.push("confirm-required");
   const endpoint = d.provider === "salesforce" ? `Salesforce ${d.path}` : d.provider === "gateway" ? `Gateway (internal) ${d.path}` : d.path;
-  const state = d.provider === "salesforce" ? "optional (Connected App configured)" : d.provider === "gateway" ? "always on" : "enabled";
+  const state = d.provider === "salesforce" ? "optional (Connected App configured)" : d.provider === "gateway" ? "always on" : OPT_IN_TOOLSETS.includes(d.toolset) ? "opt-in (list toolset explicitly)" : "enabled";
   return `| \`${d.name}\` | ${d.toolset} | ${d.write ? "**WRITE**" : "READ"} | ${d.method} | \`${endpoint}\` | ${d.scopes.join(", ")} | ${state} | ${flags.join(", ")} |`;
 });
 
@@ -43,7 +44,7 @@ ${rows.join("\n")}
 
 - No generic \`graph-request(method, url, body)\` passthrough tool.
 - No \`$batch\` passthrough.
-- No Files/Sites/OneNote/User/Group write, and no delete on the Microsoft 365 side.
+- No Files/Sites/OneNote/User/Group write. The only Microsoft 365 delete is \`delete-calendar-event\` (one event, cancels with a notice when the user organizes a meeting with attendees) in the opt-in toolset \`calendar-delete\`, which must be enabled explicitly.
 - Mail delete / folder delete / destructive mailbox operations are excluded.
 - TT - product-support system, data partly from Vectory (optional, toolset \`tt\`): the TT MCP server's read-only tools are discovered at runtime and re-exposed with a \`tt-\` prefix (not listed here - see /admin Toolok).
 - Vectory ERP (optional, toolset \`vectory\`, provider \`sql\`): read-only, parameterised queries on the meditrade replica (+ alphavet cross-db) through a read-only login; the ad-hoc SELECT is validated (single statement, no DML/DDL/EXEC, row cap).

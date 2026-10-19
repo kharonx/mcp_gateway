@@ -5,7 +5,7 @@ import type { AuditEntry } from "../../audit/audit.js";
 /**
  * Calendar WRITE toolset. Same safety policy as mail: every operation that
  * creates/changes an event or notifies attendees requires confirm=true after
- * explicit user approval. No delete.
+ * explicit user approval. Deleting lives in the opt-in toolset calendar-delete.
  */
 
 const DEFAULT_TZ = "Europe/Budapest";
@@ -111,6 +111,68 @@ export const calendarWriteEndpoints: EndpointDef[] = [
       sender: "me",
       messageId: args.eventId,
       result: result ? `ok (${args.response})` : "error",
+    }),
+  },
+];
+
+/**
+ * Opt-in toolset calendar-delete (see OPT_IN_TOOLSETS): one destructive tool.
+ * Organizer with attendees -> POST /cancel (attendees get a cancellation, a plain DELETE would
+ * leave the meeting in their calendars); own event without attendees -> DELETE. An attendee
+ * deleting would silently drop out without telling the organizer, so that is refused (decline
+ * instead) unless the organizer already cancelled the meeting.
+ */
+export const calendarDeleteEndpoints: EndpointDef[] = [
+  {
+    name: "delete-calendar-event",
+    description:
+      "DELETE one calendar event of the signed-in user. If the user is the organizer and the event has attendees, the meeting is CANCELLED instead (attendees get a cancellation notice with the optional comment). A meeting the user was only invited to cannot be deleted here - decline it with respond-to-calendar-event - unless the organizer already cancelled it. An occurrence id removes one occurrence, a series master id the whole series. The event goes to Deleted Items. DESTRUCTIVE WRITE - read the event first (get-calendar-event), tell the user exactly which event (subject, start, attendees) and call with confirm=true only after their explicit approval.",
+    toolset: "calendar-delete",
+    write: true,
+    scopes: ["Calendars.ReadWrite"],
+    method: "DELETE",
+    path: "/me/events/{eventId}",
+    pathParamDescriptions: { eventId: "Event id (from get-calendar-view / list-calendar-events / get-calendar-event)" },
+    resourceType: "calendarEvent",
+    confirmRequired: true,
+    extraInput: {
+      comment: z.string().optional().describe("Cancellation message sent to the attendees (organizer only)"),
+    },
+    handler: async (args, ctx) => {
+      const id = encodeURIComponent(args.eventId);
+      // Snapshot first, so the result and the audit log say WHAT was removed, and a wrong id fails before anything is touched.
+      const ev: any = await ctx.graph.request("GET", `/me/events/${id}`, {
+        query: { $select: "subject,start,end,type,isOrganizer,isCancelled,organizer,attendees" },
+      });
+      const attendees: string[] = (ev.attendees ?? []).map((a: any) => a.emailAddress?.address).filter(Boolean);
+      const snapshot = {
+        id: args.eventId,
+        subject: ev.subject,
+        start: ev.start,
+        end: ev.end,
+        type: ev.type,
+        organizer: ev.organizer?.emailAddress?.address,
+        attendees,
+      };
+      if (!ev.isOrganizer && !ev.isCancelled) {
+        throw new Error(
+          `"${ev.subject}" is organized by ${snapshot.organizer ?? "someone else"} - deleting it would not notify them. ` +
+            "Decline it with respond-to-calendar-event instead. Nothing was deleted."
+        );
+      }
+      if (ev.isOrganizer && attendees.length) {
+        await ctx.graph.request("POST", `/me/events/${id}/cancel`, { body: { comment: args.comment ?? "" } });
+        return { cancelled: true, notifiedAttendees: attendees, ...snapshot };
+      }
+      await ctx.graph.request("DELETE", `/me/events/${id}`);
+      return { deleted: true, ...snapshot, recovery: "The event is in Deleted Items and can be restored from Outlook." };
+    },
+    auditWrite: (args, result) => ({
+      sender: "me",
+      recipients: result?.notifiedAttendees,
+      subject: result?.subject,
+      messageId: args.eventId,
+      result: result ? (result.cancelled ? "ok (cancelled)" : "ok (deleted)") : "error",
     }),
   },
 ];

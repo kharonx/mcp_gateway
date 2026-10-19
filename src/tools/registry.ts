@@ -9,7 +9,7 @@ import { resolveTimeRange, NAMED_RANGES } from "../graph/timeRange.js";
 import { withSource, withSourceList } from "../graph/source.js";
 import { extractContent } from "../content/extract.js";
 import type { EndpointDef, ToolContext } from "./types.js";
-import { pathParams, WRITE_TOOLSETS } from "./types.js";
+import { pathParams, WRITE_TOOLSETS, OPT_IN_TOOLSETS } from "./types.js";
 
 function buildInputSchema(def: EndpointDef, defaultPageItems: number, maxPageItems: number): ZodRawShape {
   const shape: ZodRawShape = {};
@@ -249,7 +249,7 @@ export function isToolEnabled(def: EndpointDef, cfg: AppConfig, access?: UserAcc
   if (cfg.enabledToolsets && !cfg.enabledToolsets.includes(def.toolset)) return false;
   // Deleting is opt-in: the toolset must be listed explicitly in the admin UI / ENABLED_TOOLSETS
   // (mirrors Salesforce's own hosted MCP, where "SObject Deletes" is a separately activated server).
-  if (def.toolset === "salesforce-delete" && !cfg.enabledToolsets?.includes("salesforce-delete")) return false;
+  if (OPT_IN_TOOLSETS.includes(def.toolset) && !cfg.enabledToolsets?.includes(def.toolset)) return false;
   if (def.provider === "salesforce" && !isSalesforceConfigured(cfg)) return false;
   if (def.provider === "tt" && !isTtConfigured(cfg)) return false;
   if (def.provider === "sql" && !isSqlConfigured(cfg)) return false;

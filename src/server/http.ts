@@ -36,6 +36,7 @@ const ALL_TOOLSETS: Toolset[] = [
   "shared-mail-write",
   "calendar",
   "calendar-write",
+  "calendar-delete",
   "teams",
   "teams-write",
   "meetings",

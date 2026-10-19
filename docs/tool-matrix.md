@@ -7,9 +7,9 @@ Principle: **read broadly, write narrowly** - the WRITE surface is Outlook mail
 Salesforce Connected App is configured - Salesforce activity/record writes. Every
 outbound send and every Salesforce write is gated by `confirm=true`.
 
-Total tools: **139** (25 WRITE, 114 READ)
+Total tools: **140** (26 WRITE, 114 READ)
 
-Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-write (5), calendar (8), calendar-write (3), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (10), vectory (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
+Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-write (5), calendar (8), calendar-write (3), calendar-delete (1), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (10), vectory (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
 
 | MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -49,6 +49,7 @@ Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-wr
 | `create-calendar-event` | calendar-write | **WRITE** | POST | `/me/events` | Calendars.ReadWrite | enabled | confirm-required |
 | `update-calendar-event` | calendar-write | **WRITE** | PATCH | `/me/events/{eventId}` | Calendars.ReadWrite | enabled | confirm-required |
 | `respond-to-calendar-event` | calendar-write | **WRITE** | POST | `/me/events/{eventId}/{response}` | Calendars.ReadWrite | enabled | confirm-required |
+| `delete-calendar-event` | calendar-delete | **WRITE** | DELETE | `/me/events/{eventId}` | Calendars.ReadWrite | opt-in (list toolset explicitly) | confirm-required |
 | `list-chats` | teams | READ | GET | `/me/chats` | Chat.Read | enabled | paginated |
 | `get-chat` | teams | READ | GET | `/me/chats/{chatId}` | Chat.Read | enabled |  |
 | `list-chat-messages` | teams | READ | GET | `/me/chats/{chatId}/messages` | Chat.Read | enabled | paginated, time-range |
@@ -157,7 +158,7 @@ Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-wr
 
 - No generic `graph-request(method, url, body)` passthrough tool.
 - No `$batch` passthrough.
-- No Files/Sites/OneNote/User/Group write, and no delete on the Microsoft 365 side.
+- No Files/Sites/OneNote/User/Group write. The only Microsoft 365 delete is `delete-calendar-event` (one event, cancels with a notice when the user organizes a meeting with attendees) in the opt-in toolset `calendar-delete`, which must be enabled explicitly.
 - Mail delete / folder delete / destructive mailbox operations are excluded.
 - TT - product-support system, data partly from Vectory (optional, toolset `tt`): the TT MCP server's read-only tools are discovered at runtime and re-exposed with a `tt-` prefix (not listed here - see /admin Toolok).
 - Vectory ERP (optional, toolset `vectory`, provider `sql`): read-only, parameterised queries on the meditrade replica (+ alphavet cross-db) through a read-only login; the ad-hoc SELECT is validated (single statement, no DML/DDL/EXEC, row cap).
