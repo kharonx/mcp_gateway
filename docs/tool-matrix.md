@@ -7,9 +7,9 @@ Principle: **read broadly, write narrowly** - the WRITE surface is Outlook mail
 Salesforce Connected App is configured - Salesforce activity/record writes. Every
 outbound send and every Salesforce write is gated by `confirm=true`.
 
-Total tools: **140** (26 WRITE, 114 READ)
+Total tools: **146** (27 WRITE, 119 READ)
 
-Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-write (5), calendar (8), calendar-write (3), calendar-delete (1), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (10), vectory (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
+Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-write (5), imap (5), imap-write (1), calendar (8), calendar-write (3), calendar-delete (1), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (10), vectory (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
 
 | MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -38,6 +38,12 @@ Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-wr
 | `reply-shared-mailbox-mail` | shared-mail-write | **WRITE** | POST | `/users/{mailbox}/messages/{messageId}/reply` | Mail.Send.Shared | enabled | confirm-required |
 | `reply-all-shared-mailbox-mail` | shared-mail-write | **WRITE** | POST | `/users/{mailbox}/messages/{messageId}/replyAll` | Mail.Send.Shared | enabled | confirm-required |
 | `forward-shared-mailbox-mail` | shared-mail-write | **WRITE** | POST | `/users/{mailbox}/messages/{messageId}/forward` | Mail.Send.Shared | enabled | confirm-required |
+| `list-imap-accounts` | imap | READ | GET | `imap://accounts` |  | optional (IMAP_ENCRYPTION_KEY set) |  |
+| `list-imap-folders` | imap | READ | GET | `imap://{accountId}/folders` |  | optional (IMAP_ENCRYPTION_KEY set) |  |
+| `list-imap-messages` | imap | READ | GET | `imap://{accountId}/messages` |  | optional (IMAP_ENCRYPTION_KEY set) |  |
+| `get-imap-message` | imap | READ | GET | `imap://{accountId}/message` |  | optional (IMAP_ENCRYPTION_KEY set) |  |
+| `get-imap-attachment-content` | imap | READ | GET | `imap://{accountId}/attachment` |  | optional (IMAP_ENCRYPTION_KEY set) | content-download |
+| `mark-imap-mail-read` | imap-write | **WRITE** | PATCH | `imap://{accountId}/message/flags` |  | optional (IMAP_ENCRYPTION_KEY set) |  |
 | `list-calendars` | calendar | READ | GET | `/me/calendars` | Calendars.Read | enabled | paginated |
 | `get-calendar` | calendar | READ | GET | `/me/calendars/{calendarId}` | Calendars.Read | enabled |  |
 | `get-calendar-view` | calendar | READ | GET | `/me/calendarView` | Calendars.Read | enabled | paginated, time-range |

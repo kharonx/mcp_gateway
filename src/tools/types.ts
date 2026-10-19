@@ -6,6 +6,7 @@ import type { SalesforceClient } from "../salesforce/client.js";
 import type { SfConnectionInfo } from "../salesforce/auth.js";
 import type { UserAccess } from "../users.js";
 import type { SqlClient } from "../sql/client.js";
+import type { ImapAccountInfo, ImapCredentials } from "../imap/store.js";
 
 /** Logical toolsets of the Reporting profile (spec section 24). */
 export type Toolset =
@@ -17,6 +18,8 @@ export type Toolset =
   | "salesforce-delete"
   | "mail"
   | "mail-write"
+  | "imap"
+  | "imap-write"
   | "shared-mail"
   | "shared-mail-write"
   | "calendar"
@@ -32,7 +35,7 @@ export type Toolset =
   | "search"
   | "users";
 
-export const WRITE_TOOLSETS: Toolset[] = ["mail-write", "shared-mail-write", "calendar-write", "calendar-delete", "teams-write", "salesforce-write", "salesforce-delete"];
+export const WRITE_TOOLSETS: Toolset[] = ["mail-write", "shared-mail-write", "imap-write", "calendar-write", "calendar-delete", "teams-write", "salesforce-write", "salesforce-delete"];
 
 /** Destructive toolsets: active only when listed explicitly in ENABLED_TOOLSETS / the admin toolset list. */
 export const OPT_IN_TOOLSETS: Toolset[] = ["salesforce-delete", "calendar-delete"];
@@ -57,7 +60,7 @@ export interface EndpointDef {
   toolset: Toolset;
   write?: boolean;
   /** Data source. Default "graph" (Microsoft Graph); "salesforce" tools run through the caller's own Salesforce connection. */
-  provider?: "graph" | "salesforce" | "gateway" | "tt" | "sql";
+  provider?: "graph" | "salesforce" | "gateway" | "tt" | "sql" | "imap";
   /** Custom implementation (non-Graph providers). Receives validated inputs and the tool context. */
   handler?: (args: Record<string, any>, ctx: ToolContext) => Promise<unknown>;
   /** Delegated Graph scopes used by this tool (documentation + matrix). */
@@ -119,6 +122,14 @@ export interface SalesforceAccess {
   info(): SfConnectionInfo | null;
 }
 
+/** Per-request access to the calling user's linked IMAP mailboxes (HTTP mode with IMAP_ENCRYPTION_KEY). */
+export interface ImapAccess {
+  /** Portal URL where the user links mailboxes. */
+  connectUrl: string;
+  accounts(): ImapAccountInfo[];
+  credentials(accountId: string): ImapCredentials;
+}
+
 export interface ToolContext {
   graph: GraphClient;
   audit: AuditLogger;
@@ -127,6 +138,8 @@ export interface ToolContext {
   config: AppConfig;
   /** Present only in HTTP mode with a configured Salesforce Connected App. */
   salesforce?: SalesforceAccess;
+  /** Present only in HTTP mode with IMAP_ENCRYPTION_KEY set. */
+  imap?: ImapAccess;
   /** Present only in HTTP mode with the Vectory SQL replica configured (read-only). */
   sql?: SqlClient;
   /** The tool profile actually registered for this server instance (set by buildMcpServer). */

@@ -141,6 +141,11 @@ export function isEntraConfigured(cfg: AppConfig): boolean {
   return !!(cfg.tenantId && cfg.clientId && cfg.clientSecret);
 }
 
+/** IMAP is optional: users can link mailboxes only when IMAP_ENCRYPTION_KEY is set (env, never settings.json). */
+export function isImapConfigured(cfg: AppConfig): boolean {
+  return cfg.imapEncryptionKey.length >= 16;
+}
+
 /** Salesforce is optional: the toolset only exists when a Connected App is configured. */
 export function isSalesforceConfigured(cfg: AppConfig): boolean {
   return !!(cfg.salesforce.clientId && cfg.salesforce.clientSecret);

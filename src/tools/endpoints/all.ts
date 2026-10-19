@@ -1,6 +1,7 @@
 import type { EndpointDef } from "../types.js";
 import { mailEndpoints } from "./mail.js";
 import { mailWriteEndpoints } from "./mailWrite.js";
+import { imapEndpoints, imapWriteEndpoints } from "./imap.js";
 import { calendarEndpoints } from "./calendar.js";
 import { calendarWriteEndpoints, calendarDeleteEndpoints } from "./calendarWrite.js";
 import { availabilityEndpoints } from "./availability.js";
@@ -25,6 +26,8 @@ export const allEndpoints: EndpointDef[] = [
   ...gatewayEndpoints,
   ...mailEndpoints,
   ...mailWriteEndpoints,
+  ...imapEndpoints,
+  ...imapWriteEndpoints,
   ...calendarEndpoints,
   ...availabilityEndpoints,
   ...calendarWriteEndpoints,

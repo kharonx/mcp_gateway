@@ -32,5 +32,11 @@
 - Graph quirks already handled (keep them): OneNote notebooks/sections return no `@odata.nextLink`
   (`skipPaging`), OneNote pages have no full-text search in v1.0, `parentNotebook` needs `$expand`,
   `sectionGroup` has no `links` property, large collections continue via `cursor`/`nextCursor`.
+- IMAP is optional: toolsets `imap` (read) + `imap-write` (mark read only), provider `imap`, on only when env
+  `IMAP_ENCRYPTION_KEY` is set (`isImapConfigured`). Users link their OWN mailboxes on the portal
+  (`POST /api/imap-accounts`, login tested before storing); passwords AES-GCM-encrypted in `data/imap-accounts.json`
+  (`src/imap/store.ts`). Never add a tool that accepts or returns IMAP credentials. `src/imap/client.ts`: SSRF guard
+  (resolve + block private ranges, ports 993/143 only), read tools open folders readOnly (EXAMINE, never set \Seen),
+  message ids = folder + UIDVALIDITY + UID.
 - Toolset renames go through `src/toolsetMigration.ts` (stored settings + users.json are rewritten once at startup,
   marker `toolsetSchema` in settings.json). Schema 2 (2026-10): TT proxy `vectory` -> `tt`, ERP `vectory-sql` -> `vectory`.

@@ -68,7 +68,7 @@ export const ADMIN_HTML = `<!doctype html>
     <span class="muted" id="u-count"></span>
   </div>
   <div class="wrap"><table><thead>
-  <tr><th>Név</th><th>Felhasználó (UPN)</th><th>Első belépés</th><th>Utolsó aktivitás</th><th>MCP-hívás</th><th>Jogosultság</th><th>Salesforce</th><th>Admin</th></tr>
+  <tr><th>Név</th><th>Felhasználó (UPN)</th><th>Első belépés</th><th>Utolsó aktivitás</th><th>MCP-hívás</th><th>Jogosultság</th><th>Salesforce / IMAP</th><th>Admin</th></tr>
   </thead><tbody id="u-body"></tbody></table></div>
   <p class="muted">Itt mindenki megjelenik, aki a kezdőoldalon Microsoft-fiókkal bejelentkezett vagy MCP-kliensből hívta a gatewayt.
   Admin jogot csak már belépett felhasználó kaphat; az utolsó admin joga nem vonható vissza. A Salesforce-oszlopban egy felhasználó
@@ -290,7 +290,8 @@ function renderUsers(){
   document.getElementById('u-body').innerHTML = rows.map(u =>
     '<tr><td>'+esc(u.name||'–')+'</td><td>'+esc(u.upn||u.oid)+'</td><td>'+esc(fmt(u.firstSeenAt))+'</td><td>'+esc(fmt(u.lastSeenAt))+'</td><td>'+esc(u.mcpRequests||0)+'</td>'+
     '<td>'+accessSummary(u)+'<br><button class="sec" data-oid="'+esc(u.oid)+'" onclick="editAccess(this.dataset.oid)">Szerkesztés</button></td>'+
-    '<td>'+(u.salesforce ? '<span class="ok">✓</span> '+esc(u.salesforce.username||u.salesforce.userId)+'<br><span class="muted">'+esc(u.salesforce.instanceUrl)+' · '+esc(fmt(u.salesforce.connectedAt))+'</span><br><button class="sec" onclick="disconnectSf(\\''+u.oid+'\\')">Kapcsolat bontása</button>' : '<span class="muted">nincs</span>')+'</td>'+
+    '<td>'+(u.salesforce ? '<span class="ok">✓</span> '+esc(u.salesforce.username||u.salesforce.userId)+'<br><span class="muted">'+esc(u.salesforce.instanceUrl)+' · '+esc(fmt(u.salesforce.connectedAt))+'</span><br><button class="sec" onclick="disconnectSf(\\''+u.oid+'\\')">Kapcsolat bontása</button>' : '<span class="muted">nincs</span>')+
+      (u.imapAccounts && u.imapAccounts.length ? '<br><b>IMAP:</b> '+u.imapAccounts.map(a => esc(a.username)+' <span class="muted">('+esc(a.host)+')</span>').join(', ')+'<br><button class="sec" data-oid="'+esc(u.oid)+'" onclick="removeImap(this.dataset.oid)">IMAP-fiókok eltávolítása</button>' : '')+'</td>'+
     '<td>'+(u.isAdmin ? '<span class="badge w">ADMIN</span><br><span class="muted">'+esc(u.adminGrantedBy||'')+'</span><br><button class="sec" onclick="setAdmin(\\''+u.oid+'\\',false)">Admin jog elvétele</button>' : '<button class="sec" onclick="setAdmin(\\''+u.oid+'\\',true)">Adminná tesz</button>')+'</td></tr>').join('');
   document.getElementById('u-count').textContent = rows.length + ' / ' + USERS.length + ' felhasználó';
 }
@@ -300,6 +301,10 @@ async function setAdmin(oid, isAdmin){
 }
 async function disconnectSf(oid){
   try { await api('/admin/api/users/' + encodeURIComponent(oid) + '/salesforce', { method: 'DELETE' }); await loadUsers(); }
+  catch(e){ alert('Hiba: ' + e.message); }
+}
+async function removeImap(oid){
+  try { await api('/admin/api/users/' + encodeURIComponent(oid) + '/imap', { method: 'DELETE' }); await loadUsers(); }
   catch(e){ alert('Hiba: ' + e.message); }
 }
 async function testSql(){

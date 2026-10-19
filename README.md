@@ -208,6 +208,27 @@ mint amit ő maga meg is tehetne a Salesforce-ban.
   Az auditnaplóban a Salesforce-hívások `salesforce:` előtaggal jelennek meg; írásnál a létrejött
   rekord azonosítója is bekerül a naplóba.
 
+## IMAP-postafiókok (opcionális)
+
+Külső (nem Microsoft 365) postafiókok — tárhelyszolgáltató, Gmail alkalmazásjelszóval stb. — az AI számára.
+Minden felhasználó a **saját** fiókjait csatolja a kezdőoldalon (IMAP-postafiókok csempe), fiókonként
+e-mail-cím, felhasználónév, jelszó, IMAP-szerver és titkosítás (SSL/TLS 993 vagy STARTTLS 143) megadásával.
+
+- **Bekapcsolás:** env `IMAP_ENCRYPTION_KEY` (legalább 16 karakter, pl. `openssl rand -base64 32`), Coolifyban
+  titkos env-ként. Amíg üres, az `imap` provider ki van kapcsolva (sem a toolok, sem a portálcsempe nem jelenik meg).
+  A kulcs csak env-ben lehet, a `settings.json`-ba soha nem kerül; ha megváltozik, a tárolt fiókokat újra kell csatolni.
+- **Tárolás:** `data/imap-accounts.json` (Entra oid szerint), a jelszó AES-256-GCM-mel titkosítva. A jelszó csak
+  a portálon (JSON POST, munkamenet-cookie) érkezik, mentés előtt a gateway kipróbálja a bejelentkezést; tool soha
+  nem kap és nem ad vissza jelszót, az AI csak a fiók azonosítóját látja.
+- **SSRF-védelem:** a szerver nevét a gateway feloldja, belső/loopback/link-local címre nem csatlakozik, és csak
+  a 993/143 port engedélyezett (STARTTLS kötelező, tanúsítvány-ellenőrzéssel).
+- **Toolok (READ, `imap` toolset):** `list-imap-accounts`, `list-imap-folders`, `list-imap-messages` (keresés:
+  feladó, címzett, tárgy, szöveg, dátum, olvasatlan; legújabb elöl, `cursor` lapozás), `get-imap-message`,
+  `get-imap-attachment-content`. A mappák csak olvasásra nyílnak (EXAMINE), így az olvasás nem jelöl olvasottnak.
+- **Tool (WRITE, `imap-write` toolset):** `mark-imap-mail-read` — csak az olvasottság jelzője. Küldés, áthelyezés,
+  törlés nincs.
+- Admin: a Felhasználók fülön látszanak a csatolt fiókok (szerver, felhasználónév), és eltávolíthatók.
+
 ## Biztonsági réteg (spec 19–20)
 
 - **Nincs** generikus `graph_request(method, url, body)` tool és nincs `$batch` passthrough —

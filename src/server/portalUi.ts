@@ -1,6 +1,7 @@
 /** Landing page: Microsoft login, identity self-check, connector onboarding. */
 import type { EndpointDef, Toolset } from "../tools/types.js";
 import { CHANGELOG, buildInfo } from "./changelog.js";
+import type { ImapAccountInfo } from "../imap/store.js";
 
 export interface PortalState {
   configured: boolean;
@@ -23,6 +24,8 @@ export interface PortalState {
   tt?: { configured: boolean; toolCount: number; error?: string };
   /** Present when the direct Vectory SQL (read-only) integration is configured. */
   sql?: { configured: boolean };
+  /** Present when IMAP is enabled on the gateway (IMAP_ENCRYPTION_KEY) and a user is signed in. */
+  imap?: { accounts: ImapAccountInfo[] };
   /** Present only when the optional Salesforce Connected App is configured. */
   salesforce?: {
     connected: boolean;
@@ -36,7 +39,7 @@ export interface PortalState {
 
 /** One integrated platform as shown on the landing page. */
 export interface PlatformCapabilities {
-  key: "m365" | "salesforce" | "tt" | "vectory";
+  key: "m365" | "salesforce" | "tt" | "vectory" | "imap";
   name: string;
   /** How the AI gets access on this platform (login model). */
   access: string;
@@ -129,6 +132,18 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): { platforms: Plat
     });
   }
 
+  // --- IMAP: a felhasználó saját, külső postafiókjai ---------------------------
+  if (on.has("imap") || on.has("imap-write")) {
+    platforms.push({
+      key: "imap",
+      name: "IMAP-postafiókok",
+      access: "Opcionális: a saját külső postafiókjaid (tárhelyszolgáltató, Gmail stb.) csatolása után (lent). A jelszót csak itt, a portálon adod meg, titkosítva tároljuk; az AI csak a fiók azonosítóját látja.",
+      read: on.has("imap") ? ["Mappák, levelek listázása és keresése (feladó, címzett, tárgy, szöveg, dátum, olvasatlan), levél és mellékletek olvasása (tartalomkinyeréssel) — olvasáskor nem jelöl olvasottnak semmit"] : [],
+      write: on.has("imap-write") ? ["Levél olvasottnak vagy olvasatlannak jelölése (nem küld, nem helyez át, nem töröl)"] : [],
+      readOnlyNote: "Csak olvasás.",
+    });
+  }
+
   // --- TT: termék­támogatási rendszer (adatai részben a Vectoryból) ----------
   if (on.has("tt")) {
     platforms.push({
@@ -160,7 +175,7 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): { platforms: Plat
     });
   }
   // Future-proofing: any toolset without a curated line above still shows up.
-  const covered: Toolset[] = ["gateway", "mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "calendar-delete", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write", "salesforce-delete", "tt", "vectory"];
+  const covered: Toolset[] = ["gateway", "mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "calendar-delete", "imap", "imap-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write", "salesforce-delete", "tt", "vectory"];
   for (const t of on) {
     if (covered.includes(t)) continue;
     const reads = enabledDefs.filter((d) => d.toolset === t && !d.write).length;
@@ -252,6 +267,7 @@ function renderSignedIn(s: PortalState): string {
     <p class="muted">A Microsoft-fiókoddal, delegált Graph-hozzáféréssel. Külön összekötés nem kell.</p>
   </div>
   ${renderSalesforceTile(s)}
+  ${renderImapTile(s)}
   ${renderTtTile(s)}
 </section>`;
 
@@ -310,6 +326,63 @@ function renderTtTile(s: PortalState): string {
   </div>`;
 }
 
+function renderImapTile(s: PortalState): string {
+  const im = s.imap;
+  if (!im) return "";
+  const list = im.accounts.length
+    ? `<ul class="imap-list">${im.accounts
+        .map(
+          (a) =>
+            `<li><span><b>${esc(a.label)}</b><br><span class="muted">${esc(a.username)} · ${esc(a.host)}:${a.port}</span></span>` +
+            `<button class="btn sec small" onclick="imapRemove('${esc(a.id)}', this)">Eltávolítás</button></li>`
+        )
+        .join("")}</ul>`
+    : `<p class="muted">Még nincs csatolt postafiók.</p>`;
+  return `
+  <div class="tile">
+    <div class="tile-head"><span class="ico imap">@</span><b>IMAP-postafiókok</b>${im.accounts.length ? `<span class="pill ok">${im.accounts.length} csatolva</span>` : `<span class="pill">nincs csatolva</span>`}</div>
+    <p class="muted">Külső postafiók (tárhelyszolgáltató, Gmail stb.) az AI számára: olvasás, keresés, mellékletek${s.platforms.some((p) => p.key === "imap" && p.write.length) ? ", olvasottnak jelölés" : ""}. Küldés és törlés nincs.</p>
+    ${list}
+    <details>
+      <summary>Postafiók csatolása</summary>
+      <form class="imap-form" onsubmit="return imapAdd(this)">
+        <label>E-mail-cím <input name="email" type="email" required autocomplete="off" oninput="imapGuess(this.form)"></label>
+        <label>Felhasználónév <span class="muted">(ha üres: az e-mail-cím)</span><input name="username" autocomplete="off"></label>
+        <label>Jelszó <span class="muted">(Gmailnél alkalmazásjelszó)</span><input name="password" type="password" required autocomplete="new-password"></label>
+        <div class="row">
+          <label>IMAP-szerver <input name="host" required placeholder="pl. mail.cegnev.hu" oninput="this.dataset.touched=1"></label>
+          <label>Titkosítás <select name="security"><option value="tls">SSL/TLS (993)</option><option value="starttls">STARTTLS (143)</option></select></label>
+        </div>
+        <label>Megnevezés <span class="muted">(opcionális)</span><input name="label" maxlength="80"></label>
+        <p class="muted" style="margin:0">Gmail: IMAP-szerver <code>imap.gmail.com</code>; kétlépcsős azonosítás mellett a Google-fiókban létrehozott <b>alkalmazásjelszó</b> kell (Workspace-ben az admin letilthatja). Mentés előtt a gateway kipróbálja a bejelentkezést; a jelszót titkosítva tárolja, és senkinek nem mutatja meg.</p>
+        <p class="cta"><button class="btn" type="submit">Kipróbálás és csatolás</button> <span class="imap-msg muted"></span></p>
+      </form>
+    </details>
+    <script>
+    function imapGuess(f) {
+      var d = (f.email.value.split("@")[1] || "").toLowerCase();
+      if (!d || f.host.dataset.touched) return;
+      f.host.value = (d === "gmail.com" || d === "googlemail.com") ? "imap.gmail.com" : "mail." + d;
+    }
+    function imapAdd(f) {
+      var msg = f.querySelector(".imap-msg"), btn = f.querySelector("button[type=submit]");
+      msg.className = "imap-msg muted"; msg.textContent = "Bejelentkezés kipróbálása…"; btn.disabled = true;
+      fetch("/api/imap-accounts", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ email: f.email.value, username: f.username.value, password: f.password.value, host: f.host.value, security: f.security.value, label: f.label.value }) })
+        .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ("HTTP " + r.status)); return j; }); })
+        .then(function () { location.reload(); })
+        .catch(function (e) { msg.className = "imap-msg fail"; msg.textContent = e.message; btn.disabled = false; });
+      return false;
+    }
+    function imapRemove(id, b) {
+      b.disabled = true;
+      fetch("/api/imap-accounts/" + encodeURIComponent(id) + "/delete", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: "{}" })
+        .then(function () { location.reload(); });
+    }
+    </script>
+  </div>`;
+}
+
 function renderSalesforceTile(s: PortalState): string {
   const sf = s.salesforce;
   if (!sf) return "";
@@ -355,7 +428,7 @@ function renderAccessCard(s: PortalState): string {
 
 /** One platform block inside the access card. */
 function renderPlatformCapabilities(p: PlatformCapabilities): string {
-  const ico = p.key === "salesforce" ? `<span class="ico sf">S</span>` : p.key === "tt" ? `<span class="ico tt">T</span>` : p.key === "vectory" ? `<span class="ico tt">V</span>` : `<span class="ico m365">M</span>`;
+  const ico = p.key === "salesforce" ? `<span class="ico sf">S</span>` : p.key === "tt" ? `<span class="ico tt">T</span>` : p.key === "vectory" ? `<span class="ico tt">V</span>` : p.key === "imap" ? `<span class="ico imap">@</span>` : `<span class="ico m365">M</span>`;
   return `
   <div class="platform">
     <h3>${ico}${esc(p.name)}</h3>
@@ -534,7 +607,16 @@ export const PORTAL_STYLE = `<style>
   .tile-head b { font-family: "Archivo", sans-serif; font-size: 1rem; }
   .tile-head .pill { margin-left: auto; }
   .ico { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; color: #fff; font-family: "Archivo", sans-serif; font-weight: 700; font-size: .75rem; flex: none; }
-  .ico.m365 { background: var(--m365); } .ico.sf { background: var(--sf); } .ico.tt { background: #5b3fa0; }
+  .ico.m365 { background: var(--m365); } .ico.sf { background: var(--sf); } .ico.tt { background: #5b3fa0; } .ico.imap { background: #2f6f5e; }
+  .imap-list { list-style: none; padding: 0; margin: .4rem 0; }
+  .imap-list li { display: flex; align-items: center; gap: .5rem; padding: .3rem 0; border-bottom: 1px solid var(--line); font-size: .92rem; }
+  .imap-list li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .imap-form { display: grid; gap: .5rem; margin-top: .6rem; }
+  .imap-form label { display: grid; gap: .2rem; font-size: .85rem; }
+  .imap-form input, .imap-form select { font: inherit; padding: .4rem .5rem; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); color: var(--ink); min-width: 0; }
+  .imap-form .row { display: grid; grid-template-columns: 1fr; gap: .5rem; }
+  @media (min-width: 640px) { .imap-form .row { grid-template-columns: 2fr 1fr; } }
+  .linkbtn { background: none; border: 0; color: var(--accent); cursor: pointer; font: inherit; padding: 0; }
   .pill { display: inline-block; font-family: "Archivo", sans-serif; font-size: .7rem; font-weight: 600; letter-spacing: .04em; padding: .1rem .5rem; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
   .pill.ok { background: var(--ok-soft); color: var(--ok); }
   .pill.gate { background: var(--gate-soft); color: var(--gate); text-transform: none; letter-spacing: 0; }

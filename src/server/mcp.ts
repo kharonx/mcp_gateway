@@ -16,6 +16,8 @@ const TOOLSET_LABELS: Record<Toolset, string> = {
   "shared-mail": "shared mailboxes - read",
   "mail-write": "Outlook mail - draft/send/reply/forward, mark read (WRITE)",
   "shared-mail-write": "shared mailboxes - draft/send/reply/forward (WRITE)",
+  imap: "external IMAP mailboxes the user linked on the portal (hosting provider, Gmail, ...) - folders, messages, attachments - read",
+  "imap-write": "external IMAP mailboxes - mark read/unread (WRITE)",
   calendar: "calendar, colleagues' free/busy, meeting-time suggestions - read",
   "calendar-write": "calendar events - create/update/respond (WRITE)",
   "calendar-delete": "calendar events - delete ONE event, or cancel it with a notice to attendees when the user is the organizer (WRITE, opt-in toolset, confirm=true per event, name the event to the user first)",

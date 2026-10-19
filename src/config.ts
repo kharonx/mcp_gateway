@@ -66,6 +66,8 @@ export interface AppConfig {
   maxDownloadBytes: number;
   auditDir: string;
   adminKey: string;
+  /** IMAP_ENCRYPTION_KEY: encrypts the users' stored IMAP passwords (AES-256-GCM). Empty = IMAP provider off. Env only, never in settings.json. */
+  imapEncryptionKey: string;
 }
 
 export function loadConfig(argv: string[] = process.argv.slice(2)): AppConfig {
@@ -90,6 +92,7 @@ export function loadConfig(argv: string[] = process.argv.slice(2)): AppConfig {
     maxDownloadBytes: num(process.env.MAX_DOWNLOAD_BYTES, 10 * 1024 * 1024),
     auditDir: path.resolve(process.env.AUDIT_DIR ?? "./logs"),
     adminKey: process.env.ADMIN_KEY ?? "",
+    imapEncryptionKey: process.env.IMAP_ENCRYPTION_KEY ?? "",
     sql: {
       server: process.env.VECTORY_SQL_SERVER || SQL_DEFAULTS.server,
       port: num(process.env.VECTORY_SQL_PORT, SQL_DEFAULTS.port),

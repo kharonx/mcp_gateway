@@ -18,7 +18,9 @@ import { SqlClient } from "../sql/client.js";
 import type { EndpointDef } from "../tools/types.js";
 import { isToolEnabled } from "../tools/registry.js";
 import type { Toolset, ToolContext } from "../tools/types.js";
-import { SettingsStore, isEntraConfigured, isSalesforceConfigured, isTtConfigured, isSqlConfigured, type MutableSettings } from "../settings.js";
+import { SettingsStore, isEntraConfigured, isSalesforceConfigured, isTtConfigured, isSqlConfigured, isImapConfigured, type MutableSettings } from "../settings.js";
+import { ImapStore, type ImapSecurity } from "../imap/store.js";
+import { verifyLogin, normalizeHost, IMAP_PORTS } from "../imap/client.js";
 import { SalesforceAuth } from "../salesforce/auth.js";
 import { UserRegistry } from "../users.js";
 import { TOOLSET_SCHEMA, migrateToolsetList } from "../toolsetMigration.js";
@@ -34,6 +36,8 @@ const ALL_TOOLSETS: Toolset[] = [
   "shared-mail",
   "mail-write",
   "shared-mail-write",
+  "imap",
+  "imap-write",
   "calendar",
   "calendar-write",
   "calendar-delete",
@@ -148,6 +152,8 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
   const oauthProxy = new OAuthProxy(() => cfg, path.resolve("data"));
   // Optional Salesforce: per-user OAuth connections keyed by Entra oid.
   const sfAuth = new SalesforceAuth(() => cfg, path.resolve("data"));
+  // Optional IMAP: mailboxes each user links on the portal, passwords encrypted under IMAP_ENCRYPTION_KEY.
+  const imapStore = new ImapStore(() => cfg.imapEncryptionKey, path.resolve("data"));
 
   // ── Web portal sessions (landing-page Microsoft login) ──────────────
   const sessions = new Map<string, WebSession>();
@@ -248,6 +254,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
         graphError,
         loginError: typeof req.query.login_error === "string" ? req.query.login_error : undefined,
         sql: { configured: isSqlConfigured(cfg) },
+        imap: isImapConfigured(cfg) && sess?.oid ? { accounts: imapStore.list(sess.oid) } : undefined,
         salesforce: sfConfigured
           ? {
               connected: !!sfInfo,
@@ -291,6 +298,70 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     res.redirect("/?sf=disconnected");
   });
 
+  // ── Optional IMAP: the signed-in user links their own external mailboxes ──
+  // JSON POST only (a cross-site form cannot send application/json; the cookie is SameSite=Lax).
+  // The login is tested before anything is stored; the password is never sent back.
+  app.post("/api/imap-accounts", async (req: Request, res: Response) => {
+    const { sess } = getSession(req);
+    if (!sess?.oid) {
+      res.status(401).json({ error: "Előbb jelentkezz be a Microsoft-fiókoddal." });
+      return;
+    }
+    if (!isImapConfigured(cfg)) {
+      res.status(400).json({ error: "Az IMAP-integráció nincs bekapcsolva ezen a gatewayen (IMAP_ENCRYPTION_KEY)." });
+      return;
+    }
+    if (!req.is("application/json")) {
+      res.status(415).json({ error: "JSON body expected." });
+      return;
+    }
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const str = (k: string) => (typeof b[k] === "string" ? (b[k] as string).trim() : "");
+    try {
+      const security: ImapSecurity = b.security === "starttls" ? "starttls" : "tls";
+      const input = {
+        label: str("label").slice(0, 80),
+        email: str("email").slice(0, 200) || undefined,
+        host: normalizeHost(str("host")),
+        port: IMAP_PORTS[security],
+        security,
+        username: str("username") || str("email"),
+        password: typeof b.password === "string" ? b.password : "",
+      };
+      if (!input.username || !input.password) throw new Error("A felhasználónév és a jelszó kötelező.");
+      const t = await verifyLogin(input);
+      const account = imapStore.add(sess.oid, input);
+      audit.log({
+        timestamp: new Date().toISOString(),
+        user: sess.upn ?? sess.oid,
+        session: sess.oid,
+        tool: "portal:link-imap-account",
+        operation: "WRITE",
+        resourceType: "imapAccount",
+        graphEndpoint: `imap:${input.host}`,
+        httpMethod: "POST",
+        success: true,
+        durationMs: 0,
+      });
+      res.json({ ok: true, account, folders: t.folders });
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.post("/api/imap-accounts/:id/delete", (req: Request, res: Response) => {
+    const { sess } = getSession(req);
+    if (!sess?.oid) {
+      res.status(401).json({ error: "Előbb jelentkezz be a Microsoft-fiókoddal." });
+      return;
+    }
+    if (!req.is("application/json")) {
+      res.status(415).json({ error: "JSON body expected." });
+      return;
+    }
+    res.json({ ok: true, removed: imapStore.remove(sess.oid, String(req.params.id)) });
+  });
+
   app.get("/login", (req: Request, res: Response) => {
     if (!isEntraConfigured(cfg)) {
       res.redirect("/?login_error=" + encodeURIComponent("Az Entra ID beállítás még hiányzik (lásd /admin)."));
@@ -322,6 +393,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       salesforce: isSalesforceConfigured(cfg),
       tt: isTtConfigured(cfg),
       vectorySql: isSqlConfigured(cfg),
+      imap: isImapConfigured(cfg),
     });
   });
 
@@ -391,6 +463,15 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       config: cfg,
       access,
       ...(sqlClient ? { sql: sqlClient } : {}),
+      ...(isImapConfigured(cfg) && oid
+        ? {
+            imap: {
+              connectUrl: `${cfg.baseUrl}/`,
+              accounts: () => imapStore.list(oid),
+              credentials: (accountId: string) => imapStore.credentials(oid, accountId),
+            },
+          }
+        : {}),
       ...(isSalesforceConfigured(cfg) && oid
         ? {
             salesforce: {
@@ -509,6 +590,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
           effectiveAccess: eff,
           effectiveToolCount: eff.blocked ? 0 : currentEndpoints().filter((d) => isToolEnabled(d, cfg, eff)).length,
           salesforce: sfAuth.info(u.oid),
+          imapAccounts: imapStore.list(u.oid).map(({ id, label, host, username }) => ({ id, label, host, username })),
         };
       })
     );
@@ -554,6 +636,10 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
   app.delete("/admin/api/users/:oid/salesforce", adminAuth, async (req, res) => {
     await sfAuth.disconnect(String(req.params.oid));
     res.json({ ok: true });
+  });
+
+  app.delete("/admin/api/users/:oid/imap", adminAuth, (req, res) => {
+    res.json({ ok: true, removed: imapStore.remove(String(req.params.oid)) });
   });
 
   app.post("/admin/api/test-sql", adminAuth, async (_req, res) => {
@@ -760,7 +846,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
         toolset: d.toolset,
         write: !!d.write,
         method: d.method,
-        path: d.provider === "salesforce" ? `Salesforce ${d.path}` : d.provider === "tt" ? `TT MCP ${d.path}` : d.provider === "sql" ? `Vectory SQL ${d.path}` : d.path,
+        path: d.provider === "salesforce" ? `Salesforce ${d.path}` : d.provider === "tt" ? `TT MCP ${d.path}` : d.provider === "sql" ? `Vectory SQL ${d.path}` : d.provider === "imap" ? `IMAP ${d.path.replace("imap://", "")}` : d.path,
         scopes: d.scopes,
         description: d.description,
       }));
@@ -791,6 +877,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     if (!isEntraConfigured(cfg)) {
       console.log(`  NOTE: Entra ID is NOT configured yet - open ${cfg.baseUrl}/admin to set it up.`);
     }
+    console.log(`  IMAP         : ${isImapConfigured(cfg) ? `ON (${imapStore.count()} linked mailbox(es))` : "off (IMAP_ENCRYPTION_KEY not set)"}`);
     console.log(`  Salesforce   : ${isSalesforceConfigured(cfg) ? `optional toolset ON (callback ${sfAuth.callbackUrl()})` : "off (no Connected App configured)"}`);
   });
 }
