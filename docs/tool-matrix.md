@@ -7,9 +7,9 @@ Principle: **read broadly, write narrowly** - the WRITE surface is Outlook mail
 Salesforce Connected App is configured - Salesforce activity/record writes. Every
 outbound send and every Salesforce write is gated by `confirm=true`.
 
-Total tools: **146** (27 WRITE, 119 READ)
+Total tools: **148** (27 WRITE, 121 READ)
 
-Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-write (5), imap (5), imap-write (1), calendar (8), calendar-write (3), calendar-delete (1), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (10), vectory (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
+Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-write (5), imap (5), imap-write (1), calendar (8), calendar-write (3), calendar-delete (1), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (12), vectory (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
 
 | MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -122,6 +122,8 @@ Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-wr
 | `search-people` | search | READ | GET | `/me/people` | People.Read | enabled | paginated, search |
 | `list-users` | users | READ | GET | `/users` | User.Read.All | enabled | paginated |
 | `get-user` | users | READ | GET | `/users/{userIdOrUpn}` | User.Read.All | enabled |  |
+| `get-user-manager` | users | READ | GET | `/users/{userIdOrUpn}/manager` | User.Read.All | enabled |  |
+| `list-direct-reports` | users | READ | GET | `/users/{userIdOrUpn}/directReports` | User.Read.All | enabled | paginated |
 | `get-user-account-status-history` | users | READ | GET | `/auditLogs/directoryAudits` | AuditLog.Read.All, Directory.Read.All | enabled | paginated, time-range, search |
 | `list-directory-audits` | users | READ | GET | `/auditLogs/directoryAudits` | AuditLog.Read.All, Directory.Read.All | enabled | paginated, time-range |
 | `search-users` | users | READ | GET | `/users` | User.Read.All | enabled | paginated, search |

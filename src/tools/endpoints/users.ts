@@ -39,6 +39,36 @@ export const usersEndpoints: EndpointDef[] = [
     sourceType: "user",
   },
   {
+    name: "get-user-manager",
+    description:
+      "Get the direct MANAGER of a user (Entra 'manager' relation, as set in the directory). Returns 404 / no manager when none is set. Use it to know who someone reports to.",
+    toolset: "users",
+    scopes: ["User.Read.All"],
+    method: "GET",
+    path: "/users/{userIdOrUpn}/manager",
+    pathParamDescriptions: { userIdOrUpn: "Entra object id or userPrincipalName, e.g. kiss.peter@ceg.hu" },
+    resourceType: "user",
+    defaultSelect: USER_SELECT,
+    query: { select: true },
+    sourceType: "user",
+  },
+  {
+    name: "list-direct-reports",
+    description:
+      "List the DIRECT REPORTS of a user (people whose manager in Entra is this user). Empty when the user manages nobody or the directory has no manager data.",
+    toolset: "users",
+    scopes: ["User.Read.All"],
+    method: "GET",
+    path: "/users/{userIdOrUpn}/directReports",
+    pathParamDescriptions: { userIdOrUpn: "Entra object id or userPrincipalName, e.g. kiss.peter@ceg.hu" },
+    resourceType: "user",
+    paginated: true,
+    maxTop: 999,
+    defaultSelect: USER_SELECT,
+    query: { select: true },
+    sourceType: "user",
+  },
+  {
     name: "get-user-account-status-history",
     description:
       "When was a user DISABLED (or re-enabled), by whom, with what result? Reads the Entra directory audit log (category UserManagement) for the given user and returns only the events that changed accountEnabled: 'Disable account' / 'Enable account' activities and 'Update user' events whose modifiedProperties contain AccountEnabled (true -> false = disabled). Other user updates are excluded. Newest first. RETENTION: Entra keeps directory audits 30 days (P1/P2; 7 days Free) - if the change is older the result is explicitly 'not available in audit log'; no date is estimated. Read-only; needs delegated AuditLog.Read.All + Directory.Read.All with admin consent and a reader role (Reports Reader / Security Reader / Global Reader).",
