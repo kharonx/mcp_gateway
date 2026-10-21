@@ -27,6 +27,16 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-10-21",
+    commit: "fe53946",
+    title: "Vezető és közvetlen beosztottak a címtárból",
+    items: [
+      "Új tool a users toolsetben: get-user-manager - egy felhasználó közvetlen vezetője, ahogy az Entra címtárban be van állítva (név, beosztás, osztály, e-mail). Ha nincs vezető megadva, a tool ezt jelzi.",
+      "Új tool: list-direct-reports - egy felhasználó közvetlen beosztottjai (akiknek ő a vezetője a címtárban), lapozva. Az AI ebből tudja, kinek ki a vezetője, például hogy egy levélíró a te beosztottad-e.",
+      "Csak olvasás, a User.Read.All jogosultsággal, amit a get-user is használ.",
+    ],
+  },
+  {
     date: "2026-10-19",
     commit: "994a6f2",
     title: "IMAP-postafiókok csatolása, naptáresemény törlése",
