@@ -9,7 +9,7 @@ import { resolveTimeRange, NAMED_RANGES } from "../graph/timeRange.js";
 import { withSource, withSourceList } from "../graph/source.js";
 import { extractContent } from "../content/extract.js";
 import type { EndpointDef, ToolContext } from "./types.js";
-import { pathParams, WRITE_TOOLSETS, OPT_IN_TOOLSETS } from "./types.js";
+import { pathParams, WRITE_TOOLSETS, OPT_IN_TOOLSETS, GRANT_TOOLSETS } from "./types.js";
 
 function buildInputSchema(def: EndpointDef, defaultPageItems: number, maxPageItems: number): ZodRawShape {
   const shape: ZodRawShape = {};
@@ -255,9 +255,12 @@ export function isToolEnabled(def: EndpointDef, cfg: AppConfig, access?: UserAcc
   if (def.provider === "sql" && !isSqlConfigured(cfg)) return false;
   if (def.provider === "imap" && !isImapConfigured(cfg)) return false;
   // Per-user profile (admin "Felhasználók" tab) narrows the gateway-wide profile further.
+  // No access = the gateway-wide view (admin tool list, anonymous portal); every MCP call passes one.
   if (access) {
     if (access.blocked) return false;
     if (access.readOnly && (def.write || WRITE_TOOLSETS.includes(def.toolset))) return false;
+    // Granted toolsets (Vectory) follow the admin grant alone, not the toolset allowlist.
+    if (GRANT_TOOLSETS.includes(def.toolset)) return !!access.grants?.includes(def.toolset);
     if (access.toolsets && !access.toolsets.includes(def.toolset)) return false;
   }
   return true;

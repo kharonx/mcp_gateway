@@ -134,6 +134,8 @@ AP2-számlák és tételek) és egy ellenőrzött szabad SELECT (`vectory-sql-qu
 `assertReadOnlySelect` szűrőn megy át (egy statement, SELECT/WITH, tiltott DML/DDL/EXEC kulcsszavak,
 `SET ROWCOUNT` sorlimit, 180 mp timeout). Ügyfélkulcs: `UGYFEL.VEVOKOD` (meditrade) = `UGYFEL.UGYFELKOD`
 (alphavet) = TT `vectorykod`. Beállítás: admin felület vagy env `VECTORY_SQL_SERVER/PORT/DATABASE/USER/PASSWORD/ENCRYPT`.
+Hozzáférés: csak az használja, akinek egy admin a Felhasználók fülön külön engedélyt ad (Jogosultság → Vectory-adatok);
+az engedély a felhasználó toolset-profiljától független, és minden Vectory toolt megnyit.
 A Coolify-szervernek el kell érnie az SQL-replikát (belső háló / VPN) — a kapcsolatteszt ezt mutatja.
 
 ## Felhasználói hozzáférési (kilépési) riport

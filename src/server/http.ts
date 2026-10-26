@@ -18,6 +18,7 @@ import { SqlClient } from "../sql/client.js";
 import type { EndpointDef } from "../tools/types.js";
 import { isToolEnabled } from "../tools/registry.js";
 import type { Toolset, ToolContext } from "../tools/types.js";
+import { GRANT_TOOLSETS } from "../tools/types.js";
 import { SettingsStore, isEntraConfigured, isSalesforceConfigured, isTtConfigured, isSqlConfigured, isImapConfigured, type MutableSettings } from "../settings.js";
 import { ImapStore, type ImapSecurity } from "../imap/store.js";
 import { verifyLogin, normalizeHost, IMAP_PORTS } from "../imap/client.js";
@@ -609,6 +610,28 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
         res.json({ ok: true, user: u });
         return;
       }
+      if (b.grant && typeof b.grant === "object") {
+        const g = b.grant as Record<string, unknown>;
+        const toolset = String(g.toolset ?? "");
+        if (!(GRANT_TOOLSETS as string[]).includes(toolset)) throw new Error(`Only these toolsets can be granted: ${GRANT_TOOLSETS.join(", ")}.`);
+        const granted = g.granted === true;
+        const u = users.setGrant(String(req.params.oid), toolset, granted, p.upn ?? p.via);
+        audit.log({
+          timestamp: new Date().toISOString(),
+          user: p.upn ?? p.oid ?? p.via,
+          session: p.oid ?? "",
+          tool: granted ? "admin:grant-toolset" : "admin:revoke-toolset",
+          operation: "WRITE",
+          resourceType: "user",
+          graphEndpoint: `users/${u.upn ?? u.oid}`,
+          httpMethod: "PUT",
+          success: true,
+          durationMs: 0,
+          result: toolset,
+        });
+        res.json({ ok: true, user: u });
+        return;
+      }
       if ("access" in b) {
         const a = b.access;
         if (a === null) {
@@ -631,7 +654,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
         res.json({ ok: true, user: u });
         return;
       }
-      res.status(400).json({ error: "Nothing to change (isAdmin or access expected)." });
+      res.status(400).json({ error: "Nothing to change (isAdmin, grant or access expected)." });
     } catch (err) {
       res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
     }

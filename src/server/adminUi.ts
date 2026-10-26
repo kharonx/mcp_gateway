@@ -76,7 +76,9 @@ export const ADMIN_HTML = `<!doctype html>
   <p class="muted"><b>Jogosultság:</b> felhasználónként szűkíthető, mely toolseteket használhatja az AI a nevében (a gateway-szintű
   toolset-kapcsolókon belül), tiltható nála minden írás, vagy letiltható az MCP-hozzáférése teljesen. Akinek nincs egyéni profilja,
   arra a Beállítások fülön megadott <b>alapértelmezett felhasználói jogosultság</b> vonatkozik. A változás a következő MCP-hívástól él;
-  a kliens cache-elt tool-listája miatt az AI-nak újra kell kötnie a connectort, hogy az új listát lássa.</p>
+  a kliens cache-elt tool-listája miatt az AI-nak újra kell kötnie a connectort, hogy az új listát lássa.
+  A <b>Vectory-adatokhoz</b> csak az fér hozzá, akinek egy admin itt külön engedélyt ad (Jogosultság → Vectory-adatok);
+  az engedéllyel minden Vectory tool elérhető. A gateway-szintű vectory toolset-kapcsoló ezen felül főkapcsoló.</p>
 
   <dialog id="u-dialog">
     <h3 style="margin:0 0 .2rem" id="ua-title">Jogosultság</h3>
@@ -84,6 +86,7 @@ export const ADMIN_HTML = `<!doctype html>
     <label class="f"><input type="radio" name="ua-mode" value="all" checked> Minden, a gatewayen engedélyezett toolset</label>
     <label class="f"><input type="radio" name="ua-mode" value="custom"> Csak a kijelölt toolsetek:</label>
     <div class="checks" id="ua-toolsets" style="margin:.2rem 0 .8rem 1.4rem"></div>
+    <label class="f"><input type="checkbox" id="ua-vectory"> <b>Vectory-adatok</b> — hozzáfér a Vectory ERP minden tooljához (ügyfél, számla, forgalom, ad-hoc SELECT), a fenti toolset-választástól függetlenül</label>
     <label class="f"><input type="checkbox" id="ua-readOnly"> Csak olvasás — minden írási tool tiltva ennél a felhasználónál</label>
     <label class="f"><input type="checkbox" id="ua-blocked"> MCP-hozzáférés letiltva — az AI-kliens hívásai 403-mal elutasítva</label>
     <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.8rem; align-items:center">
@@ -215,8 +218,10 @@ let ME = {};
 let USERS = [];
 let TOOLSETS_AVAILABLE = [];
 let EDIT_OID = null;
+const GRANT_TOOLSETS = ['vectory'];
 function renderToolsetChecks(el, name, selected){
-  el.innerHTML = TOOLSETS_AVAILABLE.map(t => '<label><input type="checkbox" name="'+name+'" value="'+t+'"'+(selected && selected.includes(t)?' checked':'')+'> '+t+'</label>').join('');
+  // Per-user and default profiles do not control granted toolsets (separate admin grant) - only the gateway-wide list does.
+  el.innerHTML = TOOLSETS_AVAILABLE.filter(t => name === 'ts' || !GRANT_TOOLSETS.includes(t)).map(t => '<label><input type="checkbox" name="'+name+'" value="'+t+'"'+(selected && selected.includes(t)?' checked':'')+'> '+t+'</label>').join('');
 }
 function accessSummary(u){
   const a = u.access, e = u.effectiveAccess || {};
@@ -224,6 +229,7 @@ function accessSummary(u){
   const parts = [];
   parts.push(e.toolsets ? e.toolsets.length + ' toolset' : 'minden toolset');
   if (e.readOnly) parts.push('csak olvasás');
+  if ((e.grants || []).includes('vectory')) parts.push('Vectory');
   return '<span class="acc-summary">'+(a ? '<b>egyéni</b>' : '<span class="muted">alapértelmezett</span>')+'<br>'+esc(parts.join(', '))+'<br><span class="muted">'+esc(u.effectiveToolCount)+' tool</span></span>';
 }
 function editAccess(oid){
@@ -235,6 +241,9 @@ function editAccess(oid){
   renderToolsetChecks(document.getElementById('ua-toolsets'), 'ua-ts', a.toolsets || []);
   document.getElementById('ua-readOnly').checked = !!a.readOnly;
   document.getElementById('ua-blocked').checked = !!a.blocked;
+  const vg = (u.grants || []).find(g => g.toolset === 'vectory');
+  document.getElementById('ua-vectory').checked = !!vg;
+  if (vg) document.getElementById('ua-sub').textContent += ' · Vectory: ' + (vg.grantedBy || '?') + ' ' + fmt(vg.grantedAt);
   document.getElementById('ua-msg').textContent = '';
   document.getElementById('u-dialog').showModal();
 }
@@ -243,12 +252,18 @@ async function saveAccess(){
   const toolsets = custom ? [...document.querySelectorAll('input[name=ua-ts]:checked')].map(c => c.value) : null;
   const body = { access: { toolsets, readOnly: document.getElementById('ua-readOnly').checked, blocked: document.getElementById('ua-blocked').checked } };
   const m = document.getElementById('ua-msg');
-  try { await api('/admin/api/users/' + encodeURIComponent(EDIT_OID), { method: 'PUT', body: JSON.stringify(body) }); document.getElementById('u-dialog').close(); await loadUsers(); }
+  try { await saveVectoryGrant(); await api('/admin/api/users/' + encodeURIComponent(EDIT_OID), { method: 'PUT', body: JSON.stringify(body) }); document.getElementById('u-dialog').close(); await loadUsers(); }
   catch(e){ m.textContent = 'Hiba: ' + e.message; m.className = 'msg fail'; }
+}
+async function saveVectoryGrant(){
+  const u = USERS.find(x => x.oid === EDIT_OID) || {};
+  const had = (u.grants || []).some(g => g.toolset === 'vectory');
+  const want = document.getElementById('ua-vectory').checked;
+  if (had !== want) await api('/admin/api/users/' + encodeURIComponent(EDIT_OID), { method: 'PUT', body: JSON.stringify({ grant: { toolset: 'vectory', granted: want } }) });
 }
 async function resetAccess(){
   const m = document.getElementById('ua-msg');
-  try { await api('/admin/api/users/' + encodeURIComponent(EDIT_OID), { method: 'PUT', body: JSON.stringify({ access: null }) }); document.getElementById('u-dialog').close(); await loadUsers(); }
+  try { await saveVectoryGrant(); await api('/admin/api/users/' + encodeURIComponent(EDIT_OID), { method: 'PUT', body: JSON.stringify({ access: null }) }); document.getElementById('u-dialog').close(); await loadUsers(); }
   catch(e){ m.textContent = 'Hiba: ' + e.message; m.className = 'msg fail'; }
 }
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}

@@ -39,6 +39,11 @@ export const WRITE_TOOLSETS: Toolset[] = ["mail-write", "shared-mail-write", "im
 
 /** Destructive toolsets: active only when listed explicitly in ENABLED_TOOLSETS / the admin toolset list. */
 export const OPT_IN_TOOLSETS: Toolset[] = ["salesforce-delete", "calendar-delete"];
+/**
+ * Granted per user: available only to users an admin granted it to on the "Felhasználók" tab
+ * (KnownUser.grants), independent of their toolset profile. Holders get every tool of the toolset.
+ */
+export const GRANT_TOOLSETS: Toolset[] = ["vectory"];
 
 export interface QueryCapabilities {
   filter?: boolean;

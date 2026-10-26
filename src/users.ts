@@ -17,6 +17,8 @@ export interface UserAccess {
   toolsets: string[] | null;
   readOnly: boolean;
   blocked?: boolean;
+  /** Toolsets granted to this user (GRANT_TOOLSETS, e.g. vectory); filled from KnownUser.grants. */
+  grants?: string[];
   setBy?: string;
   setAt?: string;
 }
@@ -26,8 +28,9 @@ export function effectiveAccess(
   user: KnownUser | undefined,
   defaults: { toolsets: string[] | null; readOnly: boolean }
 ): UserAccess {
-  if (user?.access) return user.access;
-  return { toolsets: defaults.toolsets, readOnly: defaults.readOnly };
+  const grants = user?.grants?.map((g) => g.toolset) ?? [];
+  if (user?.access) return { ...user.access, grants };
+  return { toolsets: defaults.toolsets, readOnly: defaults.readOnly, grants };
 }
 
 export interface KnownUser {
@@ -44,6 +47,8 @@ export interface KnownUser {
   adminGrantedAt?: string;
   /** Individual access profile; absent = the gateway default applies. */
   access?: UserAccess;
+  /** Admin-granted toolsets (GRANT_TOOLSETS), kept apart from `access` so a grant never replaces the default profile. */
+  grants?: { toolset: string; grantedBy: string; grantedAt: string }[];
 }
 
 export class UserRegistry {
@@ -153,6 +158,18 @@ export class UserRegistry {
         setAt: new Date().toISOString(),
       };
     }
+    this.persist(true);
+    return u;
+  }
+
+  /** Grant or revoke a GRANT_TOOLSETS toolset (e.g. vectory) for one user. */
+  setGrant(oid: string, toolset: string, granted: boolean, by: string): KnownUser {
+    const u = this.users.get(oid);
+    if (!u) throw new Error("Unknown user - the user must sign in on the portal (or call the MCP) first.");
+    const rest = (u.grants ?? []).filter((g) => g.toolset !== toolset);
+    if (granted) rest.push({ toolset, grantedBy: by, grantedAt: new Date().toISOString() });
+    if (rest.length) u.grants = rest;
+    else delete u.grants;
     this.persist(true);
     return u;
   }

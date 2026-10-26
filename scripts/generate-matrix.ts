@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { allEndpoints } from "../src/tools/endpoints/all.js";
-import { OPT_IN_TOOLSETS } from "../src/tools/types.js";
+import { OPT_IN_TOOLSETS, GRANT_TOOLSETS } from "../src/tools/types.js";
 
 const rows = allEndpoints.map((d) => {
   const flags: string[] = [];
@@ -16,7 +16,7 @@ const rows = allEndpoints.map((d) => {
   if (d.binary) flags.push("content-download");
   if (d.confirmRequired) flags.push("confirm-required");
   const endpoint = d.provider === "salesforce" ? `Salesforce ${d.path}` : d.provider === "gateway" ? `Gateway (internal) ${d.path}` : d.path;
-  const state = d.provider === "salesforce" ? "optional (Connected App configured)" : d.provider === "imap" ? "optional (IMAP_ENCRYPTION_KEY set)" : d.provider === "gateway" ? "always on" : OPT_IN_TOOLSETS.includes(d.toolset) ? "opt-in (list toolset explicitly)" : "enabled";
+  const state = d.provider === "salesforce" ? "optional (Connected App configured)" : d.provider === "imap" ? "optional (IMAP_ENCRYPTION_KEY set)" : d.provider === "gateway" ? "always on" : OPT_IN_TOOLSETS.includes(d.toolset) ? "opt-in (list toolset explicitly)" : GRANT_TOOLSETS.includes(d.toolset) ? "per-user admin grant (SQL configured)" : "enabled";
   return `| \`${d.name}\` | ${d.toolset} | ${d.write ? "**WRITE**" : "READ"} | ${d.method} | \`${endpoint}\` | ${d.scopes.join(", ")} | ${state} | ${flags.join(", ")} |`;
 });
 

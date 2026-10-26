@@ -21,6 +21,9 @@
 - Vectory = our ERP. Optional: toolset `vectory`, provider `sql` (`src/sql/client.ts`, `src/tools/endpoints/vectorySql.ts`),
   READ-ONLY by contract: every query passes `assertReadOnlySelect` and a row cap; use parameters (`@name`), never
   string-inline values; customer key is `UGYFEL.VEVOKOD` in meditrade (not UGYFELKOD), `UGYFEL.UGYFELKOD` in alphavet.
+  Per-user admin GRANT (`GRANT_TOOLSETS` in `src/tools/types.ts`): only users with `KnownUser.grants` containing `vectory`
+  (admin "Felhasználók" tab, audited `admin:grant-toolset`) get it, regardless of their toolset allowlist; `blocked` and
+  the gateway-wide toolset list still win.
 - Salesforce is optional: tools with `provider: "salesforce"` are registered only when a Connected
   App is configured (admin UI / `SF_CLIENT_ID`); per-user OAuth (PKCE) keyed by Entra oid in
   `data/salesforce-tokens.json`. Reads live in `salesforce.ts` (toolset `salesforce`), writes in

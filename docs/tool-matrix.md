@@ -132,17 +132,17 @@ Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-wr
 | `list-group-owners` | users | READ | GET | `/groups/{groupId}/owners` | GroupMember.Read.All, Directory.Read.All | enabled | paginated |
 | `list-group-members` | users | READ | GET | `/groups/{groupId}/members` | GroupMember.Read.All, Directory.Read.All | enabled | paginated |
 | `get-user-access-report` | users | READ | GET | `/users/{user}/access-report` | Directory.Read.All, GroupMember.Read.All, Sites.Read.All, Files.Read.All, Team.ReadBasic.All | enabled |  |
-| `vectory-find-customer` | vectory | READ | GET | `/vectory/customers` | Vectory SQL (read-only login) | enabled |  |
-| `vectory-customer` | vectory | READ | GET | `/vectory/customers/{vevokod}` | Vectory SQL (read-only login) | enabled |  |
-| `vectory-invoices` | vectory | READ | GET | `/vectory/customers/{vevokod}/invoices` | Vectory SQL (read-only login) | enabled | paginated |
-| `vectory-invoice-items` | vectory | READ | GET | `/vectory/invoices/{invoice}/items` | Vectory SQL (read-only login) | enabled |  |
-| `vectory-customer-software` | vectory | READ | GET | `/vectory/customers/{vevokod}/software` | Vectory SQL (read-only login) | enabled |  |
-| `vectory-customer-turnover` | vectory | READ | GET | `/vectory/customers/{vevokod}/turnover` | Vectory SQL (read-only login) | enabled |  |
-| `vectory-invoice-payment` | vectory | READ | GET | `/vectory/invoices/{invoice}/payment` | Vectory SQL (read-only login) | enabled |  |
-| `vectory-product-search` | vectory | READ | GET | `/vectory/products` | Vectory SQL (read-only login) | enabled |  |
-| `ap2-invoices` | vectory | READ | GET | `/ap2/customers/{vevokod}/invoices` | Vectory SQL (read-only login) | enabled | paginated |
-| `ap2-invoice-items` | vectory | READ | GET | `/ap2/invoices/{invoice}/items` | Vectory SQL (read-only login) | enabled |  |
-| `vectory-sql-query` | vectory | READ | GET | `/vectory/query` | Vectory SQL (read-only login) | enabled |  |
+| `vectory-find-customer` | vectory | READ | GET | `/vectory/customers` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
+| `vectory-customer` | vectory | READ | GET | `/vectory/customers/{vevokod}` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
+| `vectory-invoices` | vectory | READ | GET | `/vectory/customers/{vevokod}/invoices` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) | paginated |
+| `vectory-invoice-items` | vectory | READ | GET | `/vectory/invoices/{invoice}/items` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
+| `vectory-customer-software` | vectory | READ | GET | `/vectory/customers/{vevokod}/software` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
+| `vectory-customer-turnover` | vectory | READ | GET | `/vectory/customers/{vevokod}/turnover` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
+| `vectory-invoice-payment` | vectory | READ | GET | `/vectory/invoices/{invoice}/payment` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
+| `vectory-product-search` | vectory | READ | GET | `/vectory/products` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
+| `ap2-invoices` | vectory | READ | GET | `/ap2/customers/{vevokod}/invoices` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) | paginated |
+| `ap2-invoice-items` | vectory | READ | GET | `/ap2/invoices/{invoice}/items` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
+| `vectory-sql-query` | vectory | READ | GET | `/vectory/query` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
 | `salesforce-connection-status` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/limits` | Salesforce: api | optional (Connected App configured) |  |
 | `salesforce-soql-query` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/query` | Salesforce: api | optional (Connected App configured) | paginated |
 | `salesforce-sosl-search` | salesforce | READ | GET | `Salesforce /services/data/vXX.X/search` | Salesforce: api | optional (Connected App configured) |  |
