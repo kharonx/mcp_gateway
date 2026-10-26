@@ -804,6 +804,22 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     if (typeof b.sqlPassword === "string") patch.sqlPassword = b.sqlPassword;
     if (typeof b.sqlEncrypt === "boolean") patch.sqlEncrypt = b.sqlEncrypt;
     store.save(patch);
+    // Names only, never values: lets an admin see when a secret was (re)written, e.g. by browser autofill.
+    const secretsWritten = (["clientSecret", "salesforceClientSecret", "ttMcpApiKey", "sqlPassword"] as const).filter((k) => patch[k]);
+    const who = (req as Request & { admin?: ReturnType<typeof adminPrincipal> }).admin;
+    audit.log({
+      timestamp: new Date().toISOString(),
+      user: who?.upn ?? who?.oid ?? "admin",
+      session: who?.oid ?? "",
+      tool: "admin:save-settings",
+      operation: "WRITE",
+      resourceType: "settings",
+      graphEndpoint: "admin",
+      httpMethod: "PUT",
+      success: true,
+      durationMs: 0,
+      result: secretsWritten.length ? `secrets written: ${secretsWritten.join(", ")}` : "no secret changed",
+    });
     applySettings();
     refreshSql();
     await refreshTt();

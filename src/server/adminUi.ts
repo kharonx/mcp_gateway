@@ -99,8 +99,8 @@ export const ADMIN_HTML = `<!doctype html>
   <fieldset>
     <legend>Microsoft Entra ID</legend>
     <label class="f">Tenant ID <input type="text" id="s-tenantId" placeholder="00000000-0000-…"></label>
-    <label class="f">Client ID (app registration) <input type="text" id="s-clientId" placeholder="00000000-0000-…"></label>
-    <label class="f">Client Secret <input type="password" id="s-clientSecret" placeholder="(változatlan, ha üresen hagyod)"></label>
+    <label class="f">Client ID (app registration) <input type="text" id="s-clientId" autocomplete="off" placeholder="00000000-0000-…"></label>
+    <label class="f">Client Secret <input type="password" id="s-clientSecret" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')" placeholder="(változatlan, ha üresen hagyod)"></label>
     <label class="f">Base URL (publikus cím) <input type="text" id="s-baseUrl" placeholder="https://mcp.ceged.hu"></label>
     <div class="pill">Entra app <b>Redirect URI</b> (Web): <code id="s-redirect">–</code></div>
     <div class="pill">Regisztrált MCP kliensek (ChatGPT stb.): <b id="s-clients">0</b></div>
@@ -135,8 +135,8 @@ export const ADMIN_HTML = `<!doctype html>
       <button class="sec" type="button" onclick="navigator.clipboard.writeText(document.getElementById('s-sfCallback').value).then(()=>{this.textContent='Másolva ✓';setTimeout(()=>this.textContent='Másolás',1500)})">Másolás</button>
     </div>
     <p class="muted" style="margin:.6rem 0 .4rem"><b>2. lépés — a Connected App adatai:</b></p>
-    <label class="f">Consumer Key (Connected App) <input type="text" id="s-sfClientId" placeholder="Consumer Key"></label>
-    <label class="f">Consumer Secret <input type="password" id="s-sfClientSecret" placeholder="(változatlan, ha üresen hagyod)"></label>
+    <label class="f">Consumer Key (Connected App) <input type="text" id="s-sfClientId" autocomplete="off" placeholder="Consumer Key"></label>
+    <label class="f">Consumer Secret <input type="password" id="s-sfClientSecret" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')" placeholder="(változatlan, ha üresen hagyod)"></label>
     <label class="f">Salesforce Login URL <span class="muted">— a Salesforce bejelentkezési domainje, <u>nem</u> a callback</span>
       <input type="text" id="s-sfLoginUrl" placeholder="https://login.salesforce.com (sandbox: https://test.salesforce.com, My Domain: https://ceg.my.salesforce.com)"></label>
     <label class="f">OAuth scope-ok <input type="text" id="s-sfScopes" placeholder="api refresh_token"></label>
@@ -153,7 +153,7 @@ export const ADMIN_HTML = `<!doctype html>
     A TT-t közös API-kulccsal éri el a gateway (nem személyes jogosultság), ezért a toolsetet a Felhasználók fülön érdemes név szerint kiosztani.
     A toollista a TT-ről töltődik be induláskor és mentéskor. Üresen hagyott kulcs = integráció kikapcsolva.</p>
     <label class="f">TT MCP URL <input type="text" id="s-ttUrl" placeholder="https://tt.dokiforvet.hu/mcp"></label>
-    <label class="f">TT API-kulcs (Mcp:ApiKey) <input type="password" id="s-ttKey" placeholder="(változatlan, ha üresen hagyod)"></label>
+    <label class="f">TT API-kulcs (Mcp:ApiKey) <input type="password" id="s-ttKey" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')" placeholder="(változatlan, ha üresen hagyod)"></label>
     <div class="pill" id="s-ttState">–</div>
     <div style="margin-top:.6rem"><button class="sec" onclick="testTt()">TT kapcsolat tesztelése</button> <span id="s-ttmsg" class="msg"></span></div>
     <div id="s-tttools" class="muted" style="margin-top:.4rem; font-size:.8rem"></div>
@@ -170,8 +170,8 @@ export const ADMIN_HTML = `<!doctype html>
       <label class="f">Port <input type="number" id="s-sqlPort" placeholder="1433" min="1" max="65535"></label>
       <label class="f">Adatbázis <input type="text" id="s-sqlDatabase" placeholder="meditrade"></label>
     </div>
-    <label class="f">SQL felhasználó (csak olvasó) <input type="text" id="s-sqlUser" placeholder="mcp_reader"></label>
-    <label class="f">SQL jelszó <input type="password" id="s-sqlPassword" placeholder="(változatlan, ha üresen hagyod)"></label>
+    <label class="f">SQL felhasználó (csak olvasó) <input type="text" id="s-sqlUser" autocomplete="off" placeholder="mcp_reader"></label>
+    <label class="f">SQL jelszó <input type="password" id="s-sqlPassword" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')" placeholder="(változatlan, ha üresen hagyod)"></label>
     <label class="f"><input type="checkbox" id="s-sqlEncrypt"> Titkosított kapcsolat (Encrypt=true; belső hálón általában ki)</label>
     <div class="pill" id="s-sqlState">–</div>
     <div style="margin-top:.6rem"><button class="sec" onclick="testSql()">SQL kapcsolat tesztelése</button> <span id="s-sqlmsg" class="msg"></span></div>
