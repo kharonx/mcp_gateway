@@ -25,7 +25,7 @@ export function buildInfo(): { version: string; commit: string; date: string } {
   return { version: `${APP_VERSION}+${commit}`, commit, date: latest?.date ?? "" };
 }
 
-export const CHANGELOG: ChangelogEntry[
+export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-10-26",
     commit: "ef776d0",
@@ -36,7 +36,7 @@ export const CHANGELOG: ChangelogEntry[
       "Javítás: a böngésző jelszókezelője nem tudja többé csendben felülírni a mentett titkokat (Entra client secret, Salesforce, TT, SQL jelszó) a Beállítások mentésekor. Ez okozhatta a sikertelen Microsoft-bejelentkezést és a Vectory SQL-kapcsolat hibáját.",
       "A Beállítások mentése is az auditnaplóba kerül (admin:save-settings), azzal együtt, hogy melyik titok lett újraírva (értékek nélkül).",
     ],
-  },] = [
+  },
   {
     date: "2026-10-21",
     commit: "fe53946",
