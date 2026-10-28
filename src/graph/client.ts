@@ -93,8 +93,9 @@ export class GraphClient {
         let code = "unknown";
         let message = res.statusText;
         try {
-          const err = (await res.json()) as { error?: { code?: string; message?: string } };
-          code = err.error?.code ?? code;
+          const err = (await res.json()) as { error?: { code?: string; message?: string; innerError?: { code?: string } } };
+          // innerError.code is the specific reason where Graph sets one (e.g. SpeakerAttributionNotAllowed).
+          code = err.error?.innerError?.code ?? err.error?.code ?? code;
           message = err.error?.message ?? message;
         } catch {
           /* non-JSON error body */

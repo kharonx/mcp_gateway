@@ -41,5 +41,10 @@
   (`src/imap/store.ts`). Never add a tool that accepts or returns IMAP credentials. `src/imap/client.ts`: SSRF guard
   (resolve + block private ranges, ports 993/143 only), read tools open folders readOnly (EXAMINE, never set \Seen),
   message ids = folder + UIDVALIDITY + UID.
+- Org-wide Teams transcripts: toolset `meetings-org`, provider `graph-app` (`src/tools/endpoints/meetingsOrg.ts`), also in
+  `GRANT_TOOLSETS` (admin grants it per user). The ONLY tools that use APPLICATION permissions (client credentials,
+  `src/auth/appToken.ts`, `ctx.appGraph` is created only for granted users); never route other tools through `appGraph`.
+  Tenant prerequisites: app permissions OnlineMeetingTranscript.Read.All + OnlineMeetings.Read.All + User.Read.All
+  (admin consent) and a Teams application access policy (`New-/Grant-CsApplicationAccessPolicy`). Audit prefix `graph-app:`.
 - Toolset renames go through `src/toolsetMigration.ts` (stored settings + users.json are rewritten once at startup,
   marker `toolsetSchema` in settings.json). Schema 2 (2026-10): TT proxy `vectory` -> `tt`, ERP `vectory-sql` -> `vectory`.

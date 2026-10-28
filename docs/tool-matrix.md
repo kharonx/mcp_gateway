@@ -7,9 +7,9 @@ Principle: **read broadly, write narrowly** - the WRITE surface is Outlook mail
 Salesforce Connected App is configured - Salesforce activity/record writes. Every
 outbound send and every Salesforce write is gated by `confirm=true`.
 
-Total tools: **148** (27 WRITE, 121 READ)
+Total tools: **153** (27 WRITE, 126 READ)
 
-Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-write (5), imap (5), imap-write (1), calendar (8), calendar-write (3), calendar-delete (1), teams (12), teams-write (3), meetings (7), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (12), vectory (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
+Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-write (5), imap (5), imap-write (1), calendar (8), calendar-write (3), calendar-delete (1), teams (12), teams-write (3), meetings (7), meetings-org (5), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (12), vectory (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
 
 | MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -78,6 +78,11 @@ Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-wr
 | `list-meeting-recordings` | meetings | READ | GET | `/me/onlineMeetings/{meetingId}/recordings` | OnlineMeetingRecording.Read.All | enabled | paginated |
 | `list-meeting-attendance-reports` | meetings | READ | GET | `/me/onlineMeetings/{meetingId}/attendanceReports` | OnlineMeetingArtifact.Read.All | enabled | paginated |
 | `list-meeting-attendance-records` | meetings | READ | GET | `/me/onlineMeetings/{meetingId}/attendanceReports/{reportId}/attendanceRecords` | OnlineMeetingArtifact.Read.All | enabled | paginated |
+| `list-org-meeting-transcripts` | meetings-org | READ | GET | `/users/{organizer}/onlineMeetings/getAllTranscripts` |  | per-user admin grant (APP permissions, http mode) |  |
+| `find-org-online-meeting-by-join-url` | meetings-org | READ | GET | `/users/(organizer from join URL)/onlineMeetings` |  | per-user admin grant (APP permissions, http mode) |  |
+| `get-org-online-meeting` | meetings-org | READ | GET | `/users/{organizer}/onlineMeetings/{meetingId}` |  | per-user admin grant (APP permissions, http mode) |  |
+| `list-org-online-meeting-transcripts` | meetings-org | READ | GET | `/users/{organizer}/onlineMeetings/{meetingId}/transcripts` |  | per-user admin grant (APP permissions, http mode) |  |
+| `get-org-meeting-transcript-content` | meetings-org | READ | GET | `/users/{organizer}/onlineMeetings/{meetingId}/transcripts/{transcriptId}/content` |  | per-user admin grant (APP permissions, http mode) |  |
 | `list-onenote-notebooks` | onenote | READ | GET | `/me/onenote/notebooks` | Notes.Read | enabled | paginated |
 | `get-onenote-notebook` | onenote | READ | GET | `/me/onenote/notebooks/{notebookId}` | Notes.Read | enabled |  |
 | `list-onenote-notebook-sections` | onenote | READ | GET | `/me/onenote/notebooks/{notebookId}/sections` | Notes.Read | enabled | paginated |

@@ -8,6 +8,7 @@ import { availabilityEndpoints } from "./availability.js";
 import { teamsWriteEndpoints } from "./teamsWrite.js";
 import { teamsEndpoints } from "./teams.js";
 import { meetingsEndpoints } from "./meetings.js";
+import { meetingsOrgEndpoints } from "./meetingsOrg.js";
 import { onenoteEndpoints } from "./onenote.js";
 import { sharepointEndpoints } from "./sharepoint.js";
 import { onedriveEndpoints } from "./onedrive.js";
@@ -35,6 +36,7 @@ export const allEndpoints: EndpointDef[] = [
   ...teamsEndpoints,
   ...teamsWriteEndpoints,
   ...meetingsEndpoints,
+  ...meetingsOrgEndpoints,
   ...onenoteEndpoints,
   ...sharepointEndpoints,
   ...onedriveEndpoints,

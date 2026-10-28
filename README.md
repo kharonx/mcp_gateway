@@ -124,6 +124,27 @@ Minden TT-tool csak olvasás; a gateway nem éri el közvetlenül a Vectory (med
 Beállítás: admin felület (URL, kulcs, kapcsolatteszt) vagy env `TT_MCP_URL`, `TT_MCP_API_KEY`. A TT-elérés nem
 személyes jogosultság, ezért a toolsetet a felhasználói jogosultságokkal érdemes szűkíteni.
 
+## Szervezeti Teams-átiratok (admin-engedéllyel, alkalmazás-jogosultsággal)
+
+Toolset `meetings-org`, provider `graph-app` (`src/tools/endpoints/meetingsOrg.ts`): bármely kolléga által szervezett
+ütemezett Teams-meeting átirata. Ez az egyetlen rész, amely NEM a felhasználó delegált jogával, hanem a gateway
+**alkalmazás-engedélyével** (client credentials) fut, ezért csak az kapja meg, akinek egy admin a Felhasználók fülön
+(Jogosultság → Szervezeti Teams-átiratok) külön engedélyt ad. Minden hívás naplózva, a szervezővel együtt (`graph-app:` előtag).
+
+Toolok: `list-org-meeting-transcripts` (szervező + dátumtartomány), `find-org-online-meeting-by-join-url`,
+`get-org-online-meeting`, `list-org-online-meeting-transcripts`, `get-org-meeting-transcript-content` (WebVTT; ha a tenant
+tiltja a beszélő-megjelölést, beszélők nélkül). Csatornameetingek átiratait a Graph így nem adja vissza.
+
+Előfeltételek a tenantban:
+1. Entra → App registrations → az alkalmazás → API permissions → Microsoft Graph → **Application permissions**:
+   `OnlineMeetingTranscript.Read.All`, `OnlineMeetings.Read.All`, `User.Read.All`, majd **Grant admin consent**.
+2. Teams PowerShell (`Connect-MicrosoftTeams`):
+   `New-CsApplicationAccessPolicy -Identity AV-MCP-Gateway -AppIds "<client id>" -Description "AV MCP Gateway transcripts"`
+   majd `Grant-CsApplicationAccessPolicy -PolicyName AV-MCP-Gateway -Global` (vagy `-Identity <user>` csak egyes szervezőkre).
+   A szabály érvénybe lépése akár 30 percet is igénybe vehet.
+3. A Teams admin központban a meeting-átiratok Graph API-hozzáférése legyen engedélyezve.
+Az admin felület „Kapcsolat tesztelése” gombja megmutatja, hiányzik-e valamelyik alkalmazás-engedély.
+
 ## Vectory SQL replika (közvetlen, csak olvasás, opcionális)
 
 Toolset `vectory` (a Vectory ERP), provider `sql` (`src/sql/client.ts`, `src/tools/endpoints/vectorySql.ts`): `mssql`

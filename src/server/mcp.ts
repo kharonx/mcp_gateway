@@ -24,6 +24,7 @@ const TOOLSET_LABELS: Record<Toolset, string> = {
   teams: "Teams chats, channels, members - read",
   "teams-write": "Teams messages - chat/channel/reply (WRITE)",
   meetings: "online meetings, transcripts, recordings, attendance - read",
+  "meetings-org": "ORGANIZATION-WIDE Teams meeting transcripts of ANY colleague's meetings (admin-granted to this user; runs with the gateway's APPLICATION permissions, not the user's own): list-org-meeting-transcripts by organizer and date range, find-org-online-meeting-by-join-url, get-org-meeting-transcript-content - read",
   onenote: "OneNote - read",
   sharepoint: "SharePoint sites, lists, files - read",
   onedrive: "OneDrive - read",
@@ -51,6 +52,9 @@ export function buildInstructions(enabled: EndpointDef[], ctx: ToolContext): str
     if (d.write) c.w++;
     counts.set(d.toolset, c);
   }
+  const orgWideNote = counts.has("meetings-org")
+    ? " EXCEPTION: the meetings-org tools (an admin granted them to this user) run with the gateway's APPLICATION permissions and read Teams meeting transcripts of ANY colleague in the organization; every such call is audited with the organizer. Use them only for the user's legitimate work request and say whose meeting the content comes from."
+    : "";
   const profile = [...counts.entries()]
     .filter(([t]) => t !== "gateway")
     .map(([t, c]) => `  - ${t} (${c.n} tool${c.n === 1 ? "" : "s"}${c.w ? `, ${c.w} WRITE` : ""}): ${TOOLSET_LABELS[t] ?? t}`)
@@ -74,7 +78,7 @@ LATEST CHANGE (${latest?.date ?? "-"}): ${latest?.title ?? "-"}${latest?.items?.
 
 STALE TOOL LISTS: clients cache tools/list when they connect, so the tool list you hold can be older than this gateway. If the user says the gateway was updated, or a capability you expect is missing, call get-gateway-info FIRST. If it lists tools you do not have, tell the user to reconnect the connector (ChatGPT: Settings > Connectors > Disconnect then Connect; Claude: Settings > Connectors > Disconnect/Connect; Claude Code: /mcp > reconnect). Do not claim a capability is missing without checking.
 
-- Every call runs with the signed-in user's own Microsoft 365 permissions (delegated OAuth). Nothing beyond what the user could see in Outlook/Teams/SharePoint themselves.
+- Every call runs with the signed-in user's own Microsoft 365 permissions (delegated OAuth). Nothing beyond what the user could see in Outlook/Teams/SharePoint themselves.${orgWideNote}
 - WRITE tools are narrow and explicit. Drafting content is NEVER an implicit permission to send; every send/create/update/delete requires confirm=true after explicit user approval.
 - Every returned object carries a _source block (sourceType, sourceId, sourceUrl, ...). Keep these references so report statements stay traceable to their origin.
 - Typical report flow: get-calendar-view (time range) -> find-online-meeting-by-join-url -> list-meeting-transcripts -> get-meeting-transcript-content; plus list-mail-messages, list-chat-messages, search-m365, search-onenote-pages, search-my-drive.

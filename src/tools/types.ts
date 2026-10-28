@@ -28,6 +28,7 @@ export type Toolset =
   | "teams"
   | "teams-write"
   | "meetings"
+  | "meetings-org"
   | "onenote"
   | "sharepoint"
   | "onedrive"
@@ -43,7 +44,7 @@ export const OPT_IN_TOOLSETS: Toolset[] = ["salesforce-delete", "calendar-delete
  * Granted per user: available only to users an admin granted it to on the "Felhasználók" tab
  * (KnownUser.grants), independent of their toolset profile. Holders get every tool of the toolset.
  */
-export const GRANT_TOOLSETS: Toolset[] = ["vectory"];
+export const GRANT_TOOLSETS: Toolset[] = ["vectory", "meetings-org"];
 
 export interface QueryCapabilities {
   filter?: boolean;
@@ -64,8 +65,8 @@ export interface EndpointDef {
   description: string;
   toolset: Toolset;
   write?: boolean;
-  /** Data source. Default "graph" (Microsoft Graph); "salesforce" tools run through the caller's own Salesforce connection. */
-  provider?: "graph" | "salesforce" | "gateway" | "tt" | "sql" | "imap";
+  /** Data source. Default "graph" (Microsoft Graph, delegated); "graph-app" = Graph with the gateway's APPLICATION permissions (org-wide, admin-granted toolsets only); "salesforce" tools run through the caller's own Salesforce connection. */
+  provider?: "graph" | "graph-app" | "salesforce" | "gateway" | "tt" | "sql" | "imap";
   /** Custom implementation (non-Graph providers). Receives validated inputs and the tool context. */
   handler?: (args: Record<string, any>, ctx: ToolContext) => Promise<unknown>;
   /** Delegated Graph scopes used by this tool (documentation + matrix). */
@@ -137,6 +138,8 @@ export interface ImapAccess {
 
 export interface ToolContext {
   graph: GraphClient;
+  /** App-only (client-credentials) Graph client - ONLY for provider "graph-app" tools (toolset meetings-org). */
+  appGraph?: GraphClient;
   audit: AuditLogger;
   user: string;
   session: string;

@@ -19,6 +19,7 @@ import type { EndpointDef } from "../tools/types.js";
 import { isToolEnabled } from "../tools/registry.js";
 import type { Toolset, ToolContext } from "../tools/types.js";
 import { GRANT_TOOLSETS } from "../tools/types.js";
+import { AppTokenProvider } from "../auth/appToken.js";
 import { SettingsStore, isEntraConfigured, isSalesforceConfigured, isTtConfigured, isSqlConfigured, isImapConfigured, type MutableSettings } from "../settings.js";
 import { ImapStore, type ImapSecurity } from "../imap/store.js";
 import { verifyLogin, normalizeHost, IMAP_PORTS } from "../imap/client.js";
@@ -45,6 +46,7 @@ const ALL_TOOLSETS: Toolset[] = [
   "teams",
   "teams-write",
   "meetings",
+  "meetings-org",
   "onenote",
   "sharepoint",
   "onedrive",
@@ -153,6 +155,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
   const oauthProxy = new OAuthProxy(() => cfg, path.resolve("data"));
   // Optional Salesforce: per-user OAuth connections keyed by Entra oid.
   const sfAuth = new SalesforceAuth(() => cfg, path.resolve("data"));
+  const appTokens = new AppTokenProvider(() => cfg);
   // Optional IMAP: mailboxes each user links on the portal, passwords encrypted under IMAP_ENCRYPTION_KEY.
   const imapStore = new ImapStore(() => cfg.imapEncryptionKey, path.resolve("data"));
   // Linking only makes sense when this user's profile can actually use the imap tools.
@@ -462,6 +465,8 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     }
     const ctx: ToolContext = {
       graph: new GraphClient(() => oboRef.getGraphToken(token)),
+      // App-only client exists only for users granted an app-permission toolset (meetings-org).
+      ...(access.grants?.includes("meetings-org") ? { appGraph: new GraphClient(() => appTokens.getToken()) } : {}),
       audit,
       user: userFromClaims(claims),
       session: oid || randomUUID(),
@@ -716,6 +721,7 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       maxPageItems: cfg.maxPageItems,
       maxDownloadBytes: cfg.maxDownloadBytes,
       toolsetsAvailable: ALL_TOOLSETS,
+      grantToolsets: GRANT_TOOLSETS,
       configured: isEntraConfigured(cfg),
       registeredMcpClients: oauthProxy.registeredClientCount(),
       redirectUri: `${cfg.baseUrl}/auth/callback`,
@@ -869,7 +875,22 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
       });
       const data = (await r.json()) as Record<string, unknown>;
       if (r.ok && data.access_token) {
-        res.json({ ok: true, message: "Entra ID kapcsolat rendben (tenant, client ID es secret ervenyes)." });
+        // Application permissions in the token (names only) - shows whether the org-wide transcript permissions are consented.
+        let roles: string[] = [];
+        try {
+          roles = (JSON.parse(Buffer.from(String(data.access_token).split(".")[1], "base64url").toString("utf8")) as { roles?: string[] }).roles ?? [];
+        } catch { /* opaque token */ }
+        const need = ["OnlineMeetingTranscript.Read.All", "OnlineMeetings.Read.All", "User.Read.All"];
+        const missing = need.filter((n) => !roles.includes(n));
+        res.json({
+          ok: true,
+          message:
+            "Entra ID kapcsolat rendben (tenant, client ID es secret ervenyes). " +
+            (missing.length
+              ? `Szervezeti meeting-atiratokhoz (meetings-org) hianyzo alkalmazas-engedely: ${missing.join(", ")}.`
+              : "A szervezeti meeting-atiratok (meetings-org) alkalmazas-engedelyei megvannak."),
+          roles,
+        });
       } else {
         res.json({
           ok: false,

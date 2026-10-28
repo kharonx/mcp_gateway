@@ -71,6 +71,8 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): { platforms: Plat
     m365Read.push("Naptár: események, résztvevők, online meetingek, mások szabad/foglalt elérhetősége és közös időpontkeresés");
   if (on.has("teams")) m365Read.push("Teams: chatek, csatornaüzenetek, csapatok és tagok");
   if (on.has("meetings")) m365Read.push("Meetingek: átiratok, felvételek és jelenléti adatok");
+  if (on.has("meetings-org"))
+    m365Read.push("Szervezeti Teams-átiratok: bármely kolléga meetingjének átirata (admin által neked adott engedély, a gateway alkalmazás-jogosultságával, naplózva)");
   const drives = [on.has("onedrive") ? "OneDrive" : null, on.has("sharepoint") ? "SharePoint" : null].filter(Boolean);
   if (drives.length) m365Read.push(`${drives.join(" és ")}: fájlok, mappák, listák, keresés és letöltés (Word, Excel, PDF tartalom szövegként)`);
   const notes = [on.has("onenote") ? "OneNote" : null, on.has("loop") ? "Loop" : null].filter(Boolean);
@@ -175,7 +177,7 @@ export function buildCapabilities(enabledDefs: EndpointDef[]): { platforms: Plat
     });
   }
   // Future-proofing: any toolset without a curated line above still shows up.
-  const covered: Toolset[] = ["gateway", "mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "calendar-delete", "imap", "imap-write", "teams", "teams-write", "meetings", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write", "salesforce-delete", "tt", "vectory"];
+  const covered: Toolset[] = ["gateway", "mail", "shared-mail", "mail-write", "shared-mail-write", "calendar", "calendar-write", "calendar-delete", "imap", "imap-write", "teams", "teams-write", "meetings", "meetings-org", "onedrive", "sharepoint", "onenote", "loop", "users", "search", "salesforce", "salesforce-write", "salesforce-delete", "tt", "vectory"];
   for (const t of on) {
     if (covered.includes(t)) continue;
     const reads = enabledDefs.filter((d) => d.toolset === t && !d.write).length;

@@ -16,7 +16,7 @@ const rows = allEndpoints.map((d) => {
   if (d.binary) flags.push("content-download");
   if (d.confirmRequired) flags.push("confirm-required");
   const endpoint = d.provider === "salesforce" ? `Salesforce ${d.path}` : d.provider === "gateway" ? `Gateway (internal) ${d.path}` : d.path;
-  const state = d.provider === "salesforce" ? "optional (Connected App configured)" : d.provider === "imap" ? "optional (IMAP_ENCRYPTION_KEY set)" : d.provider === "gateway" ? "always on" : OPT_IN_TOOLSETS.includes(d.toolset) ? "opt-in (list toolset explicitly)" : GRANT_TOOLSETS.includes(d.toolset) ? "per-user admin grant (SQL configured)" : "enabled";
+  const state = d.provider === "salesforce" ? "optional (Connected App configured)" : d.provider === "imap" ? "optional (IMAP_ENCRYPTION_KEY set)" : d.provider === "gateway" ? "always on" : OPT_IN_TOOLSETS.includes(d.toolset) ? "opt-in (list toolset explicitly)" : d.provider === "graph-app" ? "per-user admin grant (APP permissions, http mode)" : GRANT_TOOLSETS.includes(d.toolset) ? "per-user admin grant (SQL configured)" : "enabled";
   return `| \`${d.name}\` | ${d.toolset} | ${d.write ? "**WRITE**" : "READ"} | ${d.method} | \`${endpoint}\` | ${d.scopes.join(", ")} | ${state} | ${flags.join(", ")} |`;
 });
 
