@@ -116,6 +116,8 @@ export interface EndpointDef {
   confirmRequired?: boolean;
   /** Extract WRITE audit fields (recipients, subject, ...) from args/result. */
   auditWrite?: (args: Record<string, any>, result: any) => Partial<AuditEntry>;
+  /** Extra audit fields for a READ tool whose path template does not name the resource (e.g. organizer taken from a URL). */
+  auditRead?: (args: Record<string, any>) => Partial<AuditEntry>;
   transform?: (data: any, args: Record<string, any>) => unknown | Promise<unknown>;
 }
 

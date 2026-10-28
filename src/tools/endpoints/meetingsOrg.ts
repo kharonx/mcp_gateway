@@ -38,6 +38,17 @@ async function organizerId(ctx: ToolContext, organizer: unknown): Promise<{ id: 
   return { id: u.id, displayName: u.displayName, upn: u.userPrincipalName };
 }
 
+/** Organizer object id from a Teams join URL (context={"Tid":..,"Oid":..}); undefined if absent. */
+function joinUrlOrganizer(url: string): string | undefined {
+  try {
+    const u = new URL(url);
+    if (!/(^|\.)teams\.(microsoft|live)\.com$/i.test(u.hostname)) throw new Error("not a Teams URL");
+    return (JSON.parse(u.searchParams.get("context") ?? "{}") as { Oid?: string }).Oid;
+  } catch {
+    throw new Error("joinWebUrl must be a Teams meeting join URL (https://teams.microsoft.com/l/meetup-join/...).");
+  }
+}
+
 function isoDate(v: unknown, name: string, endOfDay = false): string | undefined {
   if (v === undefined || v === "") return undefined;
   const s = String(v);
@@ -110,17 +121,11 @@ export const meetingsOrgEndpoints: EndpointDef[] = [
     extraInput: {
       joinWebUrl: z.string().describe("The Teams meeting join URL (https://teams.microsoft.com/l/meetup-join/...)"),
     },
+    // The path template cannot name the organizer, so the audit entry gets it from the URL.
+    auditRead: (args) => ({ graphEndpoint: `graph-app:/users/${joinUrlOrganizer(String(args.joinWebUrl ?? "").trim())}/onlineMeetings` }),
     handler: async (args, ctx) => {
       const url = String(args.joinWebUrl ?? "").trim();
-      let oid: string | undefined;
-      try {
-        const u = new URL(url);
-        if (!/(^|\.)teams\.(microsoft|live)\.com$/i.test(u.hostname)) throw new Error("not a Teams URL");
-        const context = JSON.parse(u.searchParams.get("context") ?? "{}") as { Oid?: string };
-        oid = context.Oid;
-      } catch {
-        throw new Error("joinWebUrl must be a Teams meeting join URL (https://teams.microsoft.com/l/meetup-join/...).");
-      }
+      const oid = joinUrlOrganizer(url);
       if (!oid || !GUID.test(oid)) throw new Error("The join URL does not name its organizer (no Oid in the context parameter); use list-org-meeting-transcripts with the organizer instead.");
       const data = (await app(ctx).request("GET", `/users/${oid}/onlineMeetings`, {
         query: { $filter: `JoinWebUrl eq '${url.replace(/'/g, "''")}'` },

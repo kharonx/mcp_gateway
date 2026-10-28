@@ -119,6 +119,14 @@ function buildQueryParams(def: EndpointDef, args: Record<string, any>): {
   return { query, headers };
 }
 
+function safeAuditRead(def: EndpointDef, args: Record<string, any>) {
+  try {
+    return def.auditRead!(args);
+  } catch {
+    return {};
+  }
+}
+
 export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: ToolContext): void {
   const { config } = ctx;
   const inputSchema = buildInputSchema(def, config.defaultPageItems, config.maxPageItems);
@@ -212,6 +220,7 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
           success: true,
           durationMs: Date.now() - started,
           ...(def.write && def.auditWrite ? def.auditWrite(args, result) : {}),
+          ...(!def.write && def.auditRead ? safeAuditRead(def, args) : {}),
         });
 
         const text = typeof result === "string" ? result : JSON.stringify(result, null, 2);
@@ -229,6 +238,7 @@ export function registerEndpointTool(server: McpServer, def: EndpointDef, ctx: T
           durationMs: Date.now() - started,
           error: message.slice(0, 500),
           ...(def.write && def.auditWrite ? def.auditWrite(args, undefined) : {}),
+          ...(!def.write && def.auditRead ? safeAuditRead(def, args) : {}),
         });
         return { content: [{ type: "text" as const, text: `ERROR: ${message}` }], isError: true };
       }
