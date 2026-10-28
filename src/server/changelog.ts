@@ -27,6 +27,16 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-10-28",
+    commit: "d972ea3",
+    title: "Szervezeti Teams-átiratok admin-engedéllyel",
+    items: [
+      "Új, admin által adható jog: Admin → Felhasználók → Jogosultság → Szervezeti Teams-átiratok. Akinek megadják, az AI-n keresztül bármely kolléga által szervezett Teams-meeting átiratát elérheti: szervező és időszak szerinti lista, keresés meghívó-link alapján, és a teljes átirat szövege.",
+      "Ezek a toolok - a gateway többi részével ellentétben - nem a saját jogosultságoddal, hanem a gateway alkalmazás-engedélyével futnak. Ezért csak külön engedéllyel érhetők el, és minden hívás naplózva van a meeting szervezőjével együtt.",
+      "Bekapcsolásához a Microsoft 365-ben alkalmazás-engedélyek és egy Teams hozzáférési szabály kell (a README-ben leírva). Az admin felület Kapcsolat tesztelése gombja megmutatja, mi hiányzik.",
+    ],
+  },
+  {
     date: "2026-10-26",
     commit: "ef776d0",
     title: "Vectory-hozzáférés admin-engedéllyel, védett titkok az admin felületen",
