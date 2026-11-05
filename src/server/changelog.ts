@@ -27,6 +27,16 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-11-05",
+    commit: "e463094",
+    title: "Admin: pontosabb SQL-kapcsolatteszt",
+    items: [
+      "Az admin felület „SQL kapcsolat tesztelése” gombja mostantól az űrlapba beírt adatokat próbálja ki, nem a korábban mentetteket, és a hibaüzenetben kiírja a tesztelt felhasználót. Az új adatok továbbra is csak Mentés után lépnek életbe.",
+      "A teszt figyelmeztet, ha a megadott SQL-felhasználó nem csak olvasó (például sysadmin, db_owner vagy db_datawriter).",
+      "A böngésző jelszókezelője már a felhasználónév- és azonosító-mezőket sem tölti ki magától az admin beállításoknál.",
+    ],
+  },
+  {
     date: "2026-10-28",
     commit: "d972ea3",
     title: "Szervezeti Teams-átiratok admin-engedéllyel",
