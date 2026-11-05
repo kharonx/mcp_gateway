@@ -89,7 +89,7 @@ export class SqlClient {
   }
 
   /** Connection self-test: server, database, and whether the Vectory / alphavet tables are visible. */
-  async test(): Promise<{ ok: boolean; server?: string; database?: string; login?: string; vectoryCustomers?: number; alphavetCustomers?: number; error?: string }> {
+  async test(): Promise<{ ok: boolean; server?: string; database?: string; login?: string; vectoryCustomers?: number; alphavetCustomers?: number; writeRoles?: string[]; error?: string }> {
     try {
       const pool = await this.getPool();
       const info = await pool.request().query("SELECT @@SERVERNAME AS server, DB_NAME() AS db, SUSER_SNAME() AS login");
@@ -102,7 +102,15 @@ export class SqlClient {
       try {
         alphavetCustomers = Number((await pool.request().query("SELECT COUNT(*) AS n FROM alphavet.dbo.UGYFEL WITH(NOLOCK)")).recordset[0].n);
       } catch { /* cross-db not visible */ }
-      return { ok: true, server: r.server, database: r.db, login: r.login, vectoryCustomers, alphavetCustomers };
+      // The read-only contract rests on the login: name any role that could write.
+      let writeRoles: string[] = [];
+      try {
+        const roles = (await pool.request().query(
+          "SELECT IS_SRVROLEMEMBER('sysadmin') AS sysadmin, IS_ROLEMEMBER('db_owner') AS db_owner, IS_ROLEMEMBER('db_datawriter') AS db_datawriter, IS_ROLEMEMBER('db_ddladmin') AS db_ddladmin",
+        )).recordset[0] as Record<string, number | null>;
+        writeRoles = Object.keys(roles).filter((k) => roles[k] === 1);
+      } catch { /* role check not permitted */ }
+      return { ok: true, server: r.server, database: r.db, login: r.login, vectoryCustomers, alphavetCustomers, writeRoles };
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : String(err) };
     }

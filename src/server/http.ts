@@ -674,18 +674,40 @@ export async function runHttp(baseCfg: AppConfig): Promise<void> {
     res.json({ ok: true, removed: imapStore.remove(String(req.params.oid)) });
   });
 
-  app.post("/admin/api/test-sql", adminAuth, async (_req, res) => {
-    if (!sqlClient) {
+  // Tests what is in the form (not yet saved); an empty password field means the stored one.
+  app.post("/admin/api/test-sql", adminAuth, async (req, res) => {
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const str = (v: unknown, fallback: string) => (typeof v === "string" && v.trim() ? v.trim() : fallback);
+    const port = Number(b.sqlPort);
+    const testCfg = {
+      server: str(b.sqlServer, cfg.sql.server),
+      port: Number.isFinite(port) && port > 0 && port < 65536 ? Math.floor(port) : cfg.sql.port,
+      database: str(b.sqlDatabase, cfg.sql.database),
+      user: str(b.sqlUser, cfg.sql.user),
+      password: typeof b.sqlPassword === "string" && b.sqlPassword ? b.sqlPassword : cfg.sql.password,
+      encrypt: typeof b.sqlEncrypt === "boolean" ? b.sqlEncrypt : cfg.sql.encrypt,
+    };
+    if (!testCfg.server || !testCfg.user || !testCfg.password) {
       res.json({ ok: false, message: "A Vectory SQL szerver, felhasználó vagy jelszó hiányzik." });
       return;
     }
-    const r = await sqlClient.test();
-    if (!r.ok) res.json({ ok: false, message: r.error });
-    else
+    const client = new SqlClient(testCfg);
+    try {
+      const r = await client.test();
+      if (!r.ok) {
+        res.json({ ok: false, message: `${r.error} (tesztelt felhasználó: ${testCfg.user})` });
+        return;
+      }
       res.json({
         ok: true,
-        message: `${r.server} / ${r.database} (${r.login}) - Vectory ügyfelek: ${r.vectoryCustomers ?? "nem látható"}, alphavet ügyfelek: ${r.alphavetCustomers ?? "nem látható"}`,
+        message:
+          `${r.server} / ${r.database} (${r.login}) - Vectory ügyfelek: ${r.vectoryCustomers ?? "nem látható"}, alphavet ügyfelek: ${r.alphavetCustomers ?? "nem látható"}` +
+          (r.writeRoles?.length ? ` - FIGYELEM: ez a login nem csak olvasó (${r.writeRoles.join(", ")}); kérj db_datareader felhasználót.` : "") +
+          " Mentés nélkül nem lép életbe.",
       });
+    } finally {
+      void client.close();
+    }
   });
 
   app.post("/admin/api/test-tt", adminAuth, async (_req, res) => {

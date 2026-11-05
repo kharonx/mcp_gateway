@@ -103,7 +103,7 @@ export const ADMIN_HTML = `<!doctype html>
   <fieldset>
     <legend>Microsoft Entra ID</legend>
     <label class="f">Tenant ID <input type="text" id="s-tenantId" placeholder="00000000-0000-…"></label>
-    <label class="f">Client ID (app registration) <input type="text" id="s-clientId" autocomplete="off" placeholder="00000000-0000-…"></label>
+    <label class="f">Client ID (app registration) <input type="text" id="s-clientId" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="00000000-0000-…"></label>
     <label class="f">Client Secret <input type="password" id="s-clientSecret" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')" placeholder="(változatlan, ha üresen hagyod)"></label>
     <label class="f">Base URL (publikus cím) <input type="text" id="s-baseUrl" placeholder="https://mcp.ceged.hu"></label>
     <div class="pill">Entra app <b>Redirect URI</b> (Web): <code id="s-redirect">–</code></div>
@@ -139,7 +139,7 @@ export const ADMIN_HTML = `<!doctype html>
       <button class="sec" type="button" onclick="navigator.clipboard.writeText(document.getElementById('s-sfCallback').value).then(()=>{this.textContent='Másolva ✓';setTimeout(()=>this.textContent='Másolás',1500)})">Másolás</button>
     </div>
     <p class="muted" style="margin:.6rem 0 .4rem"><b>2. lépés — a Connected App adatai:</b></p>
-    <label class="f">Consumer Key (Connected App) <input type="text" id="s-sfClientId" autocomplete="off" placeholder="Consumer Key"></label>
+    <label class="f">Consumer Key (Connected App) <input type="text" id="s-sfClientId" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="Consumer Key"></label>
     <label class="f">Consumer Secret <input type="password" id="s-sfClientSecret" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')" placeholder="(változatlan, ha üresen hagyod)"></label>
     <label class="f">Salesforce Login URL <span class="muted">— a Salesforce bejelentkezési domainje, <u>nem</u> a callback</span>
       <input type="text" id="s-sfLoginUrl" placeholder="https://login.salesforce.com (sandbox: https://test.salesforce.com, My Domain: https://ceg.my.salesforce.com)"></label>
@@ -174,7 +174,7 @@ export const ADMIN_HTML = `<!doctype html>
       <label class="f">Port <input type="number" id="s-sqlPort" placeholder="1433" min="1" max="65535"></label>
       <label class="f">Adatbázis <input type="text" id="s-sqlDatabase" placeholder="meditrade"></label>
     </div>
-    <label class="f">SQL felhasználó (csak olvasó) <input type="text" id="s-sqlUser" autocomplete="off" placeholder="mcp_reader"></label>
+    <label class="f">SQL felhasználó (csak olvasó) <input type="text" id="s-sqlUser" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="mcp_reader"></label>
     <label class="f">SQL jelszó <input type="password" id="s-sqlPassword" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')" placeholder="(változatlan, ha üresen hagyod)"></label>
     <label class="f"><input type="checkbox" id="s-sqlEncrypt"> Titkosított kapcsolat (Encrypt=true; belső hálón általában ki)</label>
     <div class="pill" id="s-sqlState">–</div>
@@ -335,7 +335,15 @@ async function removeImap(oid){
 async function testSql(){
   const m = document.getElementById('s-sqlmsg');
   m.textContent = 'Tesztelés…'; m.className = 'msg muted';
-  try { const r = await api('/admin/api/test-sql', { method: 'POST', body: '{}' });
+  const body = {
+    sqlServer: document.getElementById('s-sqlServer').value,
+    sqlPort: +document.getElementById('s-sqlPort').value || 1433,
+    sqlDatabase: document.getElementById('s-sqlDatabase').value,
+    sqlUser: document.getElementById('s-sqlUser').value,
+    sqlPassword: document.getElementById('s-sqlPassword').value,
+    sqlEncrypt: document.getElementById('s-sqlEncrypt').checked,
+  };
+  try { const r = await api('/admin/api/test-sql', { method: 'POST', body: JSON.stringify(body) });
     m.textContent = (r.ok ? '✓ ' : '✗ ') + r.message; m.className = 'msg ' + (r.ok ? 'ok' : 'fail');
   } catch(e){ m.textContent = 'Hiba: ' + e.message; m.className = 'msg fail'; }
 }
