@@ -7,9 +7,9 @@ Principle: **read broadly, write narrowly** - the WRITE surface is Outlook mail
 Salesforce Connected App is configured - Salesforce activity/record writes. Every
 outbound send and every Salesforce write is gated by `confirm=true`.
 
-Total tools: **153** (27 WRITE, 126 READ)
+Total tools: **154** (27 WRITE, 127 READ)
 
-Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-write (5), imap (5), imap-write (1), calendar (8), calendar-write (3), calendar-delete (1), teams (12), teams-write (3), meetings (7), meetings-org (5), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (12), vectory (11), salesforce (11), salesforce-write (6), salesforce-delete (1)
+Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-write (5), imap (5), imap-write (1), calendar (8), calendar-write (3), calendar-delete (1), teams (12), teams-write (3), meetings (7), meetings-org (5), onenote (18), sharepoint (13), onedrive (7), loop (2), search (2), users (12), vectory (12), salesforce (11), salesforce-write (6), salesforce-delete (1)
 
 | MCP tool | Toolset | R/W | HTTP | Endpoint (Graph v1.0 / Salesforce REST) | Delegated scopes | State | Capabilities |
 |---|---|---|---|---|---|---|---|
@@ -145,6 +145,7 @@ Toolsets: gateway (1), mail (7), shared-mail (5), mail-write (7), shared-mail-wr
 | `vectory-customer-turnover` | vectory | READ | GET | `/vectory/customers/{vevokod}/turnover` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
 | `vectory-invoice-payment` | vectory | READ | GET | `/vectory/invoices/{invoice}/payment` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
 | `vectory-product-search` | vectory | READ | GET | `/vectory/products` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
+| `vectory-product-catalog` | vectory | READ | GET | `/vectory/product-catalog` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
 | `ap2-invoices` | vectory | READ | GET | `/ap2/customers/{vevokod}/invoices` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) | paginated |
 | `ap2-invoice-items` | vectory | READ | GET | `/ap2/invoices/{invoice}/items` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |
 | `vectory-sql-query` | vectory | READ | GET | `/vectory/query` | Vectory SQL (read-only login) | per-user admin grant (SQL configured) |  |

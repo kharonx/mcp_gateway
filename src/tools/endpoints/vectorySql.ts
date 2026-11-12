@@ -83,6 +83,68 @@ SELECT sz.SZIKTSZAM, sz.SZLASZAM, sz.SZKELTE, sz.SZFIZHAT, sz.SZNETTOERT, sz.SZB
 FROM SZAMLA sz
 INNER JOIN UGYFEL u ON u.UGYFELKOD = sz.UGYFELKOD`;
 
+/** Escape LIKE wildcards in user text (used with ESCAPE '\'). */
+function likeEscape(v: string): string {
+  return v.replace(/[\%_[]/g, (ch) => `\${ch}`);
+}
+
+/**
+ * Product catalogue query. The page of products is picked first (base), then each
+ * side table is read ONCE per product: ARTORZS for the three price types, JELLEMZOK
+ * pivoted for the eight attributes, CIKKCCS/CIKKCSOP for the two group labels. The
+ * naive form runs a correlated subquery per column (three on ARTORZS, eight on
+ * JELLEMZOK, two on the groups) for every row.
+ */
+export function productCatalogSql(where: string): string {
+  return `WITH base AS (
+  SELECT c.ETK, c.CIKKNEV1, c.MEROV1, c.CIKKKATKOD
+  FROM CIKK c WITH(NOLOCK)
+  WHERE ${where}
+  ORDER BY c.ETK OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY
+)
+SELECT UPPER(b.ETK) AS cikkszam, b.CIKKNEV1 AS cikknev, p.vbar, p.nagykerar, p.kiskerar, b.MEROV1 AS megyseg,
+  CASE WHEN b.CIKKKATKOD > 2 THEN 'Áru' ELSE 'Szolgáltatás' END AS cikktipus,
+  ISNULL(j.netto_suly, 'nincs') AS ctulajdonsag_netto_suly,
+  ISNULL(j.termekcsoport_kategoria, 'nincs') AS ctermekcsoport_kategoria,
+  ISNULL(j.hatoanyag, 'nincs') AS hatoanyag,
+  ISNULL(j.stat1, 'NINCSMEGADVA') AS statisztikai_besorolas_cikk,
+  ISNULL(j.stat2, 'NINCSMEGADVA') AS statisztikai_besorolas2szint_cikk,
+  REPLACE(j.web_marka, 'grandopet_', '') AS web_marka,
+  REPLACE(j.web_almarka, 'grandopet_', '') AS web_almarka,
+  g.termek_minoseg, g.tap_felszereles_pet, j.adatszolgkod
+FROM base b
+OUTER APPLY (
+  SELECT MAX(CASE WHEN x.ARTIPUS = 9 THEN x.CIKKAR END) AS vbar,
+         MAX(CASE WHEN x.ARTIPUS = 13 THEN x.CIKKAR END) AS nagykerar,
+         MAX(CASE WHEN x.ARTIPUS = 3 THEN x.CIKKAR END) AS kiskerar
+  FROM (
+    SELECT a.ARTIPUS, a.CIKKAR, ROW_NUMBER() OVER (PARTITION BY a.ARTIPUS ORDER BY a.ARNAPTOL DESC) AS rn
+    FROM ARTORZS a WITH(NOLOCK)
+    WHERE a.ETK = b.ETK AND a.ARTIPUS IN (3, 9, 13) AND a.ARNAPTOL <= GETDATE()
+  ) x WHERE x.rn = 1
+) p
+OUTER APPLY (
+  SELECT MAX(CASE WHEN jj.JELMEGNEV1 = 'Nettó súly (kg)' THEN jj.JELLEMZO END) AS netto_suly,
+         MAX(CASE WHEN jj.JELMEGNEV1 = 'Termékcsoport kategória' THEN jj.JELLEMZO END) AS termekcsoport_kategoria,
+         MAX(CASE WHEN jj.JELMEGNEV1 = 'web_hatóanyag' THEN jj.JELLEMZO END) AS hatoanyag,
+         MAX(CASE WHEN jj.JELMEGNEV1 = 'statisztikai besorolás' THEN jj.JELLEMZO END) AS stat1,
+         MAX(CASE WHEN jj.JELMEGNEV1 = 'Statisztikai besorolás 2.' THEN jj.JELLEMZO END) AS stat2,
+         MAX(CASE WHEN jj.JELMEGNEV1 = 'web_marka' THEN jj.JELLEMZO END) AS web_marka,
+         MAX(CASE WHEN jj.JELMEGNEV1 = 'web_almarka' THEN jj.JELLEMZO END) AS web_almarka,
+         MAX(CASE WHEN jj.JELMEGNEV1 = 'Adatszolgáltatási kód' THEN jj.JELLEMZO END) AS adatszolgkod
+  FROM JELLEMZOK jj WITH(NOLOCK)
+  WHERE jj.ETK = b.ETK AND jj.JELMEGNEV1 IN ('Nettó súly (kg)', 'Termékcsoport kategória', 'web_hatóanyag', 'statisztikai besorolás', 'Statisztikai besorolás 2.', 'web_marka', 'web_almarka', 'Adatszolgáltatási kód')
+) j
+OUTER APPLY (
+  SELECT MAX(CASE WHEN csop.szulo_ccsop = 6377 THEN csop.CIKKCSNEV1 END) AS termek_minoseg,
+         MAX(CASE WHEN csop.CIKKCSOP IN (127, 128) THEN CASE WHEN csop.CIKKCSNEV1 = 'TÁP' THEN 'Food' WHEN csop.CIKKCSNEV1 = 'FELSZERELÉS normál' THEN 'Non Food' ELSE csop.CIKKCSNEV1 END END) AS tap_felszereles_pet
+  FROM CIKKCCS ccs WITH(NOLOCK)
+  INNER JOIN CIKKCSOP csop WITH(NOLOCK) ON csop.CIKKCSOP = ccs.CIKKCSKOD
+  WHERE ccs.ETK = b.ETK AND (csop.szulo_ccsop = 6377 OR csop.CIKKCSOP IN (127, 128))
+) g
+ORDER BY b.ETK`;
+}
+
 export const vectorySqlEndpoints: EndpointDef[] = [
   {
     name: "vectory-find-customer",
@@ -395,6 +457,50 @@ export const vectorySqlEndpoints: EndpointDef[] = [
         maxItemsOf(args, ctx)
       );
       return { count: r.rows.length, truncated: r.truncated, items: r.rows.map((x) => ({ ...x, ...src(x.ETK, "product") })) };
+    },
+  },
+  {
+    name: "vectory-product-catalog",
+    description:
+      "Live Vectory products (CIKK.ELOCIKK = 1) with everything needed to recognise and order them: cikkszam (ETK, upper-case), cikknev, megyseg (unit), cikktipus (Áru / Szolgáltatás), current prices by price type (vbar = ARTIPUS 9, nagykerar = 13, kiskerar = 3; latest ARNAPTOL not in the future), net weight, product-group category, active ingredient, statistical classification (2 levels), web brand and sub-brand, product quality tier, Food / Non Food and the data-reporting code. One row per product. Filter with query (every word must occur in the name; a single word also matches as ETK prefix) and/or brand (web_marka fragment); without a filter it pages through the whole catalogue (about 80 000 rows) ordered by ETK: pass the returned nextSkip as skip to continue. Read-only.",
+    toolset: "vectory",
+    provider: "sql",
+    scopes: SCOPES,
+    method: "GET",
+    path: "/vectory/product-catalog",
+    resourceType: "vectory",
+    extraInput: {
+      query: z.string().optional().describe("Name words (all must match, any order) or an ETK prefix"),
+      brand: z.string().optional().describe("Brand fragment (JELLEMZOK web_marka)"),
+      skip: z.number().int().min(0).optional().describe("Rows to skip (use nextSkip of the previous page)"),
+      maxItems: z.number().int().optional().describe("Page size (default and max from gateway limits)"),
+    },
+    handler: async (args, ctx) => {
+      const db = requireSql(ctx);
+      const take = maxItemsOf(args, ctx);
+      const skip = Math.max(0, Number(args.skip) || 0);
+      const params: Record<string, unknown> = { skip, take: take + 1 };
+      const where: string[] = ["c.ELOCIKK = 1"];
+      const words = String(args.query ?? "").trim().split(/\s+/).filter(Boolean).slice(0, 6);
+      if (words.length) {
+        const likes = words.map((w, i) => { params[`w${i}`] = `%${likeEscape(w)}%`; return `c.CIKKNEV1 LIKE @w${i} ESCAPE '\'`; });
+        let cond = likes.join(" AND ");
+        if (words.length === 1) { params.etk = `${likeEscape(words[0])}%`; cond = `(${cond} OR c.ETK LIKE @etk ESCAPE '\')`; }
+        where.push(cond);
+      }
+      if (args.brand) {
+        params.brand = `%${likeEscape(String(args.brand))}%`;
+        where.push("EXISTS (SELECT 1 FROM JELLEMZOK jb WITH(NOLOCK) WHERE jb.ETK = c.ETK AND jb.JELMEGNEV1 = 'web_marka' AND jb.JELLEMZO LIKE @brand ESCAPE '\')");
+      }
+      const r = await db.select(productCatalogSql(where.join(" AND ")), params, take + 1);
+      const more = r.rows.length > take;
+      const rows = more ? r.rows.slice(0, take) : r.rows;
+      return {
+        count: rows.length,
+        truncated: more,
+        ...(more ? { nextSkip: skip + take } : {}),
+        items: rows.map((x) => ({ ...x, ...src(x.cikkszam, "product") })),
+      };
     },
   },
   {
