@@ -27,6 +27,14 @@ export function buildInfo(): { version: string; commit: string; date: string } {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-11-12",
+    commit: "320204c",
+    title: "Vectory: cikktörzs-lekérdezés",
+    items: [
+      "Új vectory-product-catalog eszköz: az élő cikkek cikkszámmal, névvel, mennyiségi egységgel, háromféle aktuális árral (VB, nagyker, kisker), nettó súllyal, hatóanyaggal, statisztikai besorolással, márkával és almárkával, termékminőséggel és Food / Non Food jelöléssel. Névszavakra, cikkszám elejére és márkára szűrhető, szűrés nélkül a teljes cikktörzs lapozható.",
+    ],
+  },
+  {
     date: "2026-11-05",
     commit: "e463094",
     title: "Admin: pontosabb SQL-kapcsolatteszt",
